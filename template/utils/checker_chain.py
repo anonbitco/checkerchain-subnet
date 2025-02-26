@@ -1,5 +1,45 @@
+from dataclasses import dataclass
+from typing import List
 import requests
 from template.utils.sqlite_utils import add_product, get_products, update_product_status
+from template.types.checker_chain import Product, ProductApiResponse, ProductsApiResponse
+
+
+@dataclass
+class FetchProductsReturnType:
+    unmined_products: List[str]
+    reward_items: List[Product]
+
+
+def fetch_products():
+    url = "https://api.checkerchain.com/api/v1/products?page=1&limit=100"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}")
+        return FetchProductsReturnType([], [])
+
+    data = ProductsApiResponse.from_dict(response.json())
+
+    if not (isinstance(data, ProductsApiResponse)):
+        return FetchProductsReturnType([], [])
+
+    products = data.data.products
+
+    # Fetch existing product IDs from the database
+    all_products = get_products()
+    existing_product_ids = {p["_id"] for p in all_products}
+    unmined_products: list[str] = []
+    reward_items: list[Product] = []
+
+    for product in products:
+        if product.status == "published" and product._id not in existing_product_ids:
+            add_product(product._id, product.name)
+            unmined_products.append(product._id)
+        if product.status == "reviewed" and product._id in existing_product_ids:
+            reward_items.append(product)
+
+    return FetchProductsReturnType(unmined_products, reward_items)
 
 
 def fetch_product_data(product_id):
@@ -8,10 +48,10 @@ def fetch_product_data(product_id):
     response = requests.get(url)
 
     if response.status_code == 200:
-        # Get the first product item
-        return response.json().get("data", [{}])[0]
+        return ProductApiResponse.from_dict(response.json()).data
     else:
-        print("Error fetching product data:", response.status_code, response.text)
+        print("Error fetching product data:",
+              response.status_code, response.text)
         return None
 
 

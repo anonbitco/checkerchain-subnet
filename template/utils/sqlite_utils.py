@@ -166,6 +166,23 @@ def get_products():
     )
 
 
+def delete_a_product(product_id: str):
+    """Delete all predictions from the database for product_id."""
+    execute_query(
+        """
+            DELETE FROM miner_predictions WHERE product_id = %s
+        """,
+        params=(product_id)
+    )
+    """Deletes a product from the database by product_id."""
+    return execute_query(
+        """
+            DELETE FROM products WHERE _id = %s
+        """,
+        params=(product_id)
+    )
+
+
 def get_a_product(
     check_chain_review_done=None, mining_done=None, rewards_distributed=None
 ):
@@ -252,7 +269,8 @@ if __name__ == "__main__":
         print(dict(prediction))  # Convert to dictionary for easier reading
 
     # Updating product status
-    update_product_status("P001", check_chain_review_done=False, mining_done=True)
+    update_product_status(
+        "P001", check_chain_review_done=False, mining_done=True)
 
     # Removing a product
     remove_product("P002")
