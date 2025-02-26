@@ -48,7 +48,10 @@ def fetch_product_data(product_id):
     response = requests.get(url)
 
     if response.status_code == 200:
-        return ProductApiResponse.from_dict(response.json()).data
+        productData = ProductApiResponse.from_dict(response.json()).data
+        if not (isinstance(productData, ProductApiResponse)):
+            return None
+        return productData.data
     else:
         print("Error fetching product data:",
               response.status_code, response.text)

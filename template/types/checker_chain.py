@@ -203,7 +203,7 @@ class ProductsApiResponse:
 @dataclass
 class ProductApiResponse:
     message: str
-    data: Data
+    data: Product
 
     @staticmethod
     def from_dict(obj: Any) -> 'ProductsApiResponse':
