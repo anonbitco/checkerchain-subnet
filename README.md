@@ -76,7 +76,7 @@ Miner is responsible for LLM-based evaluation of products to generate and submit
 4. **Calculate the final Trust Score** using a weighted aggregation function.  
 5. **Return the Trust Score** to the Validator for processing.  
 
-✅ **Customizable Weighting System** – Allows different importance levels for various scoring parameters.  
+✅ Customizable Weighting System – Allows different importance levels for various scoring parameters.  
 
 
 ### Requirements
@@ -121,7 +121,7 @@ Validator is responsible for fetching products from CheckerChain dApp, distribut
   - Update miner rewards accordingly.  
   - Remove the product from the database after processing.  
 
-✅ **Dynamic Database**
+✅ Dynamic Database
 ---
 
 ### Requirements
