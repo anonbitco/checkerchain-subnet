@@ -62,6 +62,22 @@ By combining tRCM human-decentralized ratings with AI-driven predictions, Checke
 ---
 
 ## Miner
+Miner is responsible for LLM-based evaluation of products to generate and submit the prediction of Trust Score for each reviewed product.  
+
+### **Steps to Generate Predictions:**  
+1. **Loop through product IDs** to fetch product details.  
+2. Use any reasoning AI-models.
+- OpenAI Models (including `gpt-4`)
+- Anthropic Models (including `claude-3-5-sonnet-20241022`)
+**Construct a ChatGPT prompt** with relevant product parameters.
+3. **Generate AI-based scores**, including:  
+   - **Overall Score (out of 100)**  
+   - **Breakdown Scores** for key evaluation criteria.  
+4. **Calculate the final Trust Score** using a weighted aggregation function.  
+5. **Return the Trust Score** to the Validator for processing.  
+
+✅ **Customizable Weighting System** – Allows different importance levels for various scoring parameters.  
+
 
 ### Requirements
 Before you proceed with the installation of the subnet, note the following: 
@@ -76,18 +92,68 @@ Before you proceed with the installation of the subnet, note the following:
 ---
 
 ## Validator
+Validator is responsible for fetching products from CheckerChain dApp, distributing review tasks to miners, tracking their review status, storing miner predictions, and distributing rewards based on accuracy.  
+
+### **Step 1: Fetch Products**  
+- Retrieves products from the **CheckerChain**.  
+- If a product has **status = "published"** and **is not in the database**, it is added to the **unmined list** and stored in the database.  
+- If a product has **status = "reviewed"** and **is already in the database**, it is added to the **reward list** for further processing.  
+
+### **Step 2: Store Miner Predictions**  
+- Fetches predictions from **all miners** for products in the **unmined list**.  
+- Stores predictions in the **prediction table**, including:  
+  - **Miner UID**  
+  - **Product ID**  
+  - **Predicted Score**  
+
+### **Step 3: Scoring Mechanism**  
+- Implements the scoring mechanism to rank miners and provide weights
+- Miners are ranking based on cummulative average of the absolute error between the predicted trust score and the actual trust score at the evaluation time.
+- Miner with lowest error ranks best and assigned the best weight.  
+
+
+### **Step 4: Reward Distribution**  
+- If the **reward list is empty**, initialize an array of zeros (length = number of miners) and update rewards accordingly.  
+- Otherwise:  
+  - Select **one product** from the **reward list**.  
+  - Retrieve **all miner predictions** for that product.  
+  - Compute **scores based on the difference between predicted scores and the actual trust score**.  
+  - Update miner rewards accordingly.  
+  - Remove the product from the database after processing.  
+
+✅ **Dynamic Database**
+---
 
 ### Requirements
-Before you proceed with the installation of the subnet, note the following:
+Before you proceed with the installation of the subnet, note the following: 
 
 ### Running Validator
 
 ---
 
 ## Game Theory on Subnet With tRCM
+Subnet works on Reinforcement Learning Through Human Feedback (RLHF) on ground truths of tRCM. tRCM is an acronym for trustless Review Consensus Mechanism. It is the core protocol utilized on CheckerChain to make reviews trustless.
 
+tRCM is based on 2 assumptions for a review to hold any authentic value:
+- reviews are performed in zero-knowledge proofs without any control of either the poster or the reviewer.
+- honest reviewers in the protocol always establish a majority
+
+In tRCM protocol, anyone can participate but the protocol selects the reviewers arbitrarily to review a product. Selected reviewers can only get reward for their work when their review score falls in consensus range. Closer the consensus, more the reward. Reviewers have a higher probability to make their review closer to consensus only when they are honest. Any dishonest review by any reviewer falls outside of consensus. This generates no or least reward making dishonest reviews highly expensive to perform. This will eventually discourage such attackers from participating in the tRCM protocol. 
+
+These scores are vital parameters to derive incentives for each contribution.
+
+- Trust Score: This is an atomic data of a product calculated from reviewer's task. It represents rating of a product in the range of 0 to 100.
+- Normalized Trust Score: This is a derived data of a product calculated from Trust score to determine the impact on reward.
+- Rating Score: This is a derived data of a product calculated as Trust score out of 5 and processed with Bayesian Average.
+
+When a product gets listed on CheckerChain, tRCM protocol enacts on 30+ parameters of 10 categories to generate these vital scores.
 
 ## Resources of CheckerChain
+|  | Links    | Notes    |
+| :---:   | :---: | :---: |
+| Application | https://checkerchain.com   | Mainnet is Live   |
+| Leaderboard |  |  |
+
 
 ## Contributing
 
