@@ -119,9 +119,10 @@ Validator is responsible for fetching products from CheckerChain dApp, distribut
   - Retrieve **all miner predictions** for that product.  
   - Compute **scores based on the difference between predicted scores and the actual trust score**.  
   - Update miner rewards accordingly.  
-  - Remove the product from the database after processing.  
+  - Remove the product from the database after processing.
 
 ✅ Dynamic Database
+
 ---
 
 ### Requirements
@@ -156,7 +157,7 @@ When a product gets listed on CheckerChain, tRCM protocol enacts on 30+ paramete
 
 
 ## Contributing
-
+Create a PR to this repo. At least 1 reviewer approval required.
 
 ## License
 This repository is licensed under the MIT License.
