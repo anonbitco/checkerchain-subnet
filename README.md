@@ -147,7 +147,7 @@ These scores are vital parameters to derive incentives for each contribution.
 - Normalized Trust Score: This is a derived data of a product calculated from Trust score to determine the impact on reward.
 - Rating Score: This is a derived data of a product calculated as Trust score out of 5 and processed with Bayesian Average.
 
-When a product gets listed on CheckerChain, tRCM protocol enacts on 30+ parameters of 10 categories to generate these vital scores.
+When a product gets listed on CheckerChain, tRCM protocol enacts on 30+ parameters of 10 categories to generate these vital scores. And subnet miners need to optimize their AI model to predict the best possible matching trust score.
 
 ## Resources of CheckerChain
 |  | Links    | Notes    |
