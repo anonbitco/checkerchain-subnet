@@ -30,6 +30,7 @@ from template.base.miner import BaseMinerNeuron
 from template.utils.llm import get_trust_score
 from template.utils.simulator import simulate_mining
 from template.utils.sqlite_utils import dummy_get_miner_prediction_for_products
+from template.miner.forward import forward
 
 
 class Miner(BaseMinerNeuron):
@@ -63,9 +64,7 @@ class Miner(BaseMinerNeuron):
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
         # TODO(developer): Replace with actual implementation logic.
-        predictions = dummy_get_miner_prediction_for_products(synapse.query)
-        synapse.response = predictions
-        return synapse
+        return await forward(self)
 
     async def blacklist(
         self, synapse: template.protocol.CheckerChainSynapse
@@ -101,7 +100,8 @@ class Miner(BaseMinerNeuron):
         """
 
         if synapse.dendrite is None or synapse.dendrite.hotkey is None:
-            bt.logging.warning("Received a request without a dendrite or hotkey.")
+            bt.logging.warning(
+                "Received a request without a dendrite or hotkey.")
             return True, "Missing dendrite or hotkey"
 
         # TODO(developer): Define how miners should blacklist requests.
@@ -150,7 +150,8 @@ class Miner(BaseMinerNeuron):
         - A higher stake results in a higher priority value.
         """
         if synapse.dendrite is None or synapse.dendrite.hotkey is None:
-            bt.logging.warning("Received a request without a dendrite or hotkey.")
+            bt.logging.warning(
+                "Received a request without a dendrite or hotkey.")
             return 0.0
 
         # TODO(developer): Define how miners should prioritize requests.
