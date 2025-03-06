@@ -2,7 +2,6 @@
 
 # CheckerChain SN__: Next-Gen AI-powered Trustless Crypto Review Platform <!-- omit in toc -->
 
-
 Check our [Whitepaper](https://docs.checkerchain.com/whitepaper/checkerchain-whitepaper-v2.0) for in-depth study on tRCM protocol of CheckerChain.
 
 [![CheckerChain](https://github.com/CheckerChain/CheckerChain-Asset/blob/4b0c738e6233ae019e772d24212a99800b4e1e84/CheckerChain-Twitter-Cover.png)](https://checkerchain.com)
