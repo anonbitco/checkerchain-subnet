@@ -21,7 +21,7 @@ from typing import List
 import bittensor as bt
 from typing import List, Dict
 
-from template.types.checker_chain import Product
+from template.types.checker_chain import ReviewedProduct
 
 
 # def normalize(value: float, min_val: float, max_val: float) -> float:
@@ -107,7 +107,7 @@ def reward(
 
 def get_rewards(
     self,
-    reviewed_product: Product,
+    reviewed_product: ReviewedProduct,
     responses: List[float],
 ) -> np.ndarray:
     """

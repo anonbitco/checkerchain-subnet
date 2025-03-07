@@ -70,7 +70,7 @@ def add_product(
     execute_query(
         """
         INSERT INTO products (_id, name, trust_score, check_chain_review_done, mining_done, rewards_distributed)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
     """,
         (
             _id,

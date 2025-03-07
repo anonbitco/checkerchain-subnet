@@ -30,7 +30,6 @@ from template.base.miner import BaseMinerNeuron
 from template.utils.llm import get_trust_score
 from template.utils.simulator import simulate_mining
 from template.utils.sqlite_utils import dummy_get_miner_prediction_for_products
-from template.miner.forward import forward
 
 
 class Miner(BaseMinerNeuron):
@@ -50,10 +49,8 @@ class Miner(BaseMinerNeuron):
     async def forward(
         self, synapse: template.protocol.CheckerChainSynapse
     ) -> template.protocol.CheckerChainSynapse:
+        from template.miner.forward import forward
         """
-        Processes the incoming 'Dummy' synapse by performing a predefined operation on the input data.
-        This method should be replaced with actual logic relevant to the miner's purpose.
-
         Args:
             synapse (template.protocol.Dummy): The synapse object containing the 'dummy_input' data.
 
@@ -63,8 +60,7 @@ class Miner(BaseMinerNeuron):
         The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
-        # TODO(developer): Replace with actual implementation logic.
-        return await forward(self)
+        return await forward(self, synapse=synapse)
 
     async def blacklist(
         self, synapse: template.protocol.CheckerChainSynapse
