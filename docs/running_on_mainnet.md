@@ -132,7 +132,7 @@ This step registers your subnet validator and subnet miner keys to the subnet gi
 Register your miner key to the subnet:
 
 ```bash
-btcli subnet recycle_register --netuid 1 --subtensor.network finney --wallet.name miner --wallet.hotkey default
+btcli subnet recycle_register --netuid 315 --subtensor.network finney --wallet.name miner --wallet.hotkey default
 ```
 
 Follow the below prompts:
@@ -149,7 +149,7 @@ Follow the below prompts:
 Next, register your validator key to the subnet:
 
 ```bash
-btcli subnet recycle_register --netuid 1 --subtensor.network finney --wallet.name validator --wallet.hotkey default
+btcli subnet recycle_register --netuid 315 --subtensor.network finney --wallet.name validator --wallet.hotkey default
 ```
 
 Follow the below prompts:
@@ -202,7 +202,7 @@ miner    default  1      True   0.00000  0.00000  0.00000    0.00000    0.00000 
 Run the subnet miner:
 
 ```bash
-python neurons/miner.py --netuid 1  --wallet.name miner --wallet.hotkey default --logging.debug
+python neurons/miner.py --netuid 315  --wallet.name miner --wallet.hotkey default --logging.debug
 ```
 
 You will see the below terminal output:
@@ -214,7 +214,7 @@ You will see the below terminal output:
 Run the subnet validator:
 
 ```bash
-python neurons/validator.py --netuid 1  --wallet.name validator --wallet.hotkey default --logging.debug
+python neurons/validator.py --netuid 315  --wallet.name validator --wallet.hotkey default --logging.debug
 ```
 
 You will see the below terminal output:
