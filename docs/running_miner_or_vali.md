@@ -32,13 +32,7 @@ python -m venv .venv
 Activate venv:
 
 ```bash
-source .venv/bin/activate  #for linux or macos
-```
-
-or
-
-```bash
-.\venv\Scripts\activate.bat  #for windows
+source .venv/bin/activate  #use wsl2 for windows
 ```
 
 Install the checkerchain-subnet package:
