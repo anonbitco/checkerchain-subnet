@@ -245,7 +245,6 @@ class UnreviewedProduct:
     epoch: int
     reward: float
     id: str
-    reviewCount: int
     subscribersCount: int
     isSubscribed: bool
 
@@ -283,7 +282,6 @@ class UnreviewedProduct:
         _epoch = int(obj.get("epoch"))
         _reward = float(obj.get("reward"))
         _id = str(obj.get("id"))
-        _reviewCount = int(obj.get("reviewCount"))
         _subscribersCount = int(obj.get("subscribersCount"))
         _isSubscribed = bool(obj.get("isSubscribed"))
 
@@ -292,7 +290,7 @@ class UnreviewedProduct:
             _specialReviewRequest, _discountCode, _offer, _subcategories, _slug, _gallery, _teams,
             _twitterProfile, _isClaimed, _isClaiming, _network, _createdBy, _owners, _status,
             _reviewDeadline, _rewards, _createdAt, _updatedAt, ___v, _logo, _coverImage, _epoch,
-            _reward, _id, _reviewCount, _subscribersCount, _isSubscribed
+            _reward, _id, _subscribersCount, _isSubscribed
         )
 
 

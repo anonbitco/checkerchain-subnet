@@ -27,10 +27,6 @@ import template
 # import base miner class which takes care of most of the boilerplate
 from template.base.miner import BaseMinerNeuron
 
-from template.utils.llm import get_trust_score
-from template.utils.simulator import simulate_mining
-from template.utils.sqlite_utils import dummy_get_miner_prediction_for_products
-
 
 class Miner(BaseMinerNeuron):
     """

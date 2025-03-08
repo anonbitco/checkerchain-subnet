@@ -42,53 +42,62 @@ async def forward(self: Validator):
     # TODO(developer): Define how the validator selects a miner to query, how often, etc.
     # get_random_uids is an example method, but you can replace it with your own.
     # miner_uids = get_random_uids(self, k=self.config.neuron.sample_size)
-    miner_uids = [5]
+    # miner_uids = [5]
+    miner_uids = self.metagraph.uids.tolist()
+    print(miner_uids)
     # The dendrite client queries the network.
     # define product id to get scores for
 
+    # Fetch product data
     data = fetch_products()
-    queries = data.unmined_products  # get product ids from checker chain api
-    if (len(queries) > 0):
-        # if voting is closed or open
-        responses: list = await self.dendrite(
-            # Send the query to selected miner axons in the network.
+    queries = data.unmined_products  # Get product IDs from CheckerChain API
+
+    responses = []
+    # Query the miners if there are unmined products
+    if queries:
+        responses = await self.dendrite(
             axons=[self.metagraph.axons[uid] for uid in miner_uids],
-            # Construct a dummy query. This simply contains a single integer.
             synapse=CheckerChainSynapse(query=queries),
-            # All responses have the deserialize function called on them before returning.
-            # You are encouraged to define your own deserialization function.
             deserialize=True,
         )
-        # Log the results for monitoring purposes.
         bt.logging.info(f"Received responses: {responses}")
-        # add all responses to database predictions table;
+
+        # Add all responses to the database predictions table
         for miner_uid, miner_predictions in zip(miner_uids, responses):
-            # Since input is array of product_ids, response must be array of predictions
             for product_id, prediction in zip(queries, miner_predictions):
                 add_prediction(product_id, miner_uid, prediction)
 
     # Get one product which has been reviewed and is ready to score.
     # Adjust the scores based on responses from miners.
-    if (len(data.reward_items) > 0):
+    reward_product = None
+    predictions = []
+    miner_ids = miner_uids
+    rewards = np.zeros_like(miner_uids)
+
+    if data.reward_items:
         reward_product = data.reward_items[0]
-        product_predictions = get_predictions_for_product(reward_product._id)
-        if not product_predictions:
-            product_predictions = []
+        product_predictions = get_predictions_for_product(
+            reward_product._id) or []
+
         predictions = [p["prediction"] for p in product_predictions]
         miner_ids = [p["miner_id"] for p in product_predictions]
+
+        # Compute rewards only if there's a product to process
         if reward_product:
             rewards = get_rewards(
                 self,
                 reward_product,
                 responses=predictions,
             )
-    else:
-        rewards = np.zeros_like(miner_uids)
 
     bt.logging.info(f"Scored responses: {rewards}")
+    print(rewards, miner_ids)
+    # Ensure update_scores is always called with valid values
     self.update_scores(rewards, miner_ids)
+
+    # If a product was processed, delete it from the database
     if reward_product:
-        # Delete the product and predictions from the database since the product reward has been distributed
         delete_a_product(reward_product._id)
-    # TODO: One minute until next validation ??
-    time.sleep(60)
+
+    # TODO: One hour until next validation ??
+    time.sleep(60*24)

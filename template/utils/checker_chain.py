@@ -66,10 +66,9 @@ def fetch_product_data(product_id):
     """Fetch product data from the API using the product ID."""
     url = f"https://backend.checkerchain.com/api/v1/products/{product_id}"
     response = requests.get(url)
-
     if response.status_code == 200:
         productData = UnreviewedProductApiResponse.from_dict(
-            response.json()).data
+            response.json())
         if not (isinstance(productData, UnreviewedProductApiResponse)):
             return None
         return productData.data

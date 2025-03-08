@@ -4,14 +4,14 @@ import json
 import openai
 from neurons.miner import Miner
 import template
-from template.types.checker_chain import Product
+from template.types.checker_chain import UnreviewedProduct
 from template.utils.checker_chain import fetch_product_data
 
 # OpenAI API Key (ensure this is set in env variables or a secure place)
-openai.api_key = "your_openai_api_key"
+OPENAI_API_KEY = "your_openai_api_key"
 
 
-async def generate_review_score(product: Product):
+async def generate_review_score(product: UnreviewedProduct):
     """
     Generate review scores for a product using OpenAI's GPT.
     """
@@ -63,22 +63,35 @@ async def generate_review_score(product: Product):
     """
 
     try:
-        response = await openai.ChatCompletion.acreate(
+        # Initialize OpenAI client
+        client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+        # Get API_KEY from environment variable
+        # client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Use env variable for security
+
+        response = await client.chat.completions.create(
             model="gpt-4",
-            messages=[{"role": "system", "content": "You are a product evaluation assistant."},
-                      {"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": "You are a product evaluation assistant."},
+                {"role": "user", "content": prompt}
+            ],
             temperature=0.7
         )
+        response_content = response.choices[0].message.content.strip()
 
-        review_data = json.loads(response['choices'][0]['message']['content'])
+        review_data = json.loads(response_content)
+
         return review_data
     except (json.JSONDecodeError, KeyError):
         return {"error": "Invalid response from AI"}
+    except KeyError:
+        return {"error": "Unexpected API response format"}
 
 
 def get_overall_score(ai_response: object):
-    breakdown = ai_response.get("Breakdown", {})
-
+    if (isinstance(ai_response, dict)):
+        breakdown = ai_response.get("Breakdown", {})
+    else:
+        return None
     # Default weights (Modify these as needed)
     # Sum of Weights should always equal 10 for proper overall weight to be within 100
     weights = {
@@ -96,7 +109,8 @@ def get_overall_score(ai_response: object):
 
     scores = {key: breakdown.get(key, 0) for key in weights.keys()}
 
-    overall_score = sum(float(scores[key]) * weights[key] for key in scores)
+    overall_score: float = sum(
+        float(scores[key]) * weights[key] for key in scores)
 
     return round(overall_score, 2)  # Rounds the score to 2 decimal places
 
@@ -106,7 +120,6 @@ async def forward(self: Miner, synapse: template.protocol.CheckerChainSynapse):
     Asynchronously fetch product data and generate review scores in parallel.
     """
     tasks = []
-
     for product_id in synapse.query:
         product = fetch_product_data(product_id)
         if product:
@@ -115,11 +128,17 @@ async def forward(self: Miner, synapse: template.protocol.CheckerChainSynapse):
     # Execute all API calls concurrently
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # Extract overall scores safely
-    predictions = [
-        float(get_overall_score(res))
-        for res in results
-    ]
+    # Extract overall scores safely, handling exceptions
+    predictions = []
+    for res in results:
+        try:
+            if isinstance(res, Exception):
+                raise res  # Re-raise exception to handle it below
+            score = get_overall_score(res)
+            predictions.append(score)
+        except Exception as e:
+            print(f"Error processing result: {e}")
+            predictions.append(None)  # Default value or handle differently
 
     synapse.response = predictions
     return synapse

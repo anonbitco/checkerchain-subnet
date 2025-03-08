@@ -205,7 +205,7 @@ class StreamMiner(ABC):
                     f"Stake:{metagraph.S[self.my_subnet_uid]} | "
                     f"Rank:{metagraph.R[self.my_subnet_uid]} | "
                     f"Trust:{metagraph.T[self.my_subnet_uid]} | "
-                    f"Consensus:{metagraph.C[self.my_subnet_uid] } | "
+                    f"Consensus:{metagraph.C[self.my_subnet_uid]} | "
                     f"Incentive:{metagraph.I[self.my_subnet_uid]} | "
                     f"Emission:{metagraph.E[self.my_subnet_uid]}"
                 )
@@ -221,6 +221,7 @@ class StreamMiner(ABC):
 
         # In case of unforeseen errors, the miner will log the error and continue operations.
         except Exception as e:
+            print("Something went wrong.")
             bt.logging.error(traceback.format_exc())
 
     def run_in_background_thread(self):

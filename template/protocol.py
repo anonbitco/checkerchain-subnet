@@ -52,10 +52,10 @@ class CheckerChainSynapse(bt.Synapse):
     """
 
     # Required request input, filled by sending dendrite caller.
-    query: typing.List[int]
+    query: typing.List[str]
 
     # Optional request output, filled by receiving axon.
-    response: typing.Optional[typing.List[typing.Dict[str, int | str]]] = None
+    response: list[typing.Optional[float]] = []
 
     def deserialize(self) -> int:
         """
