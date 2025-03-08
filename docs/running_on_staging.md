@@ -298,13 +298,13 @@ Run the subnet miner and subnet validator. Make sure to specify your subnet para
 Run the subnet miner:
 
 ```bash
-python neurons/miner.py --netuid 1 --subtensor.chain_endpoint ws://127.0.0.1:9946 --wallet.name miner --wallet.hotkey default --logging.debug
+python neurons/miner.py --netuid 315 --subtensor.chain_endpoint ws://127.0.0.1:9946 --wallet.name miner --wallet.hotkey default --logging.debug
 ```
 
 Run the subnet validator:
 
 ```bash
-python neurons/validator.py --netuid 1 --subtensor.chain_endpoint ws://127.0.0.1:9946 --wallet.name validator --wallet.hotkey default --logging.debug
+python neurons/validator.py --netuid 315 --subtensor.chain_endpoint ws://127.0.0.1:9946 --wallet.name validator --wallet.hotkey default --logging.debug
 ```
 
 ## 14. Set weights for your subnet
@@ -319,7 +319,7 @@ btcli root register --wallet.name validator --wallet.hotkey default --subtensor.
 
 ### Boost your subnet on the root subnet
 ```bash
-btcli root boost --netuid 1 --increase 1 --wallet.name validator --wallet.hotkey default --subtensor.chain_endpoint ws://127.0.0.1:9946
+btcli root boost --netuid 315 --increase 1 --wallet.name validator --wallet.hotkey default --subtensor.chain_endpoint ws://127.0.0.1:9946
 ```
 
 ## 15. Verify your incentive mechanism
