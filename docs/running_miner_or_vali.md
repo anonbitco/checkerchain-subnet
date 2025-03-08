@@ -1,4 +1,4 @@
-# Running CheckerChain Subnet on Testnet
+# Running Miner/Validator on CheckerChain Subnet
 
 ## Prerequisites
 
