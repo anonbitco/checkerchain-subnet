@@ -321,7 +321,7 @@ class BaseValidatorNeuron(BaseNeuron):
         """Performs exponential moving average on the scores based on the rewards received from the miners."""
 
         # Handle edge case: If either rewards or uids_array is empty.
-        if not rewards or not uids:
+        if not len(rewards) or not len(uids):
             bt.logging.warning("No rewards or uids provided. Skipping update.")
             return
 

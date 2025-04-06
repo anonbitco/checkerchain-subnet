@@ -121,7 +121,6 @@ def get_rewards(
     - np.ndarray: An array of rewards for the given query and responses.
     """
     # Get all the reward results by iteratively calling your reward() function.
-
     return np.array(
         [reward(response, reviewed_product.trustScore)
          for response in responses]

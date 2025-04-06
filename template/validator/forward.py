@@ -50,6 +50,13 @@ async def forward(self: Validator):
 
     # Fetch product data
     data = fetch_products()
+
+    bt.logging.info(f"Products to send to miners: {data.unmined_products}")
+    if (len(data.reward_items)):
+        bt.logging.info(f"Product to score: {data.reward_items[0]._id}")
+    else:
+        bt.logging.info(f"No products to score")
+
     queries = data.unmined_products  # Get product IDs from CheckerChain API
 
     responses = []
@@ -91,6 +98,7 @@ async def forward(self: Validator):
             )
 
     bt.logging.info(f"Scored responses: {rewards}")
+    bt.logging.info(f"Score ids: {miner_ids}")
     print(rewards, miner_ids)
     # Ensure update_scores is always called with valid values
     self.update_scores(rewards, miner_ids)
