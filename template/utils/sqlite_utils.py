@@ -1,4 +1,5 @@
 import sqlite3
+import bittensor as bt
 
 
 def get_db_connection():
@@ -50,7 +51,7 @@ def create_db():
         CREATE TABLE IF NOT EXISTS miner_predictions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id TEXT,
-            miner_id TEXT NOT NULL,
+            miner_id INTEGER NOT NULL,
             prediction INTEGER,
             FOREIGN KEY (product_id) REFERENCES products (_id)
         )
@@ -168,18 +169,19 @@ def get_products():
 
 def delete_a_product(product_id: str):
     """Delete all predictions from the database for product_id."""
+    bt.logging.info(f"Deleting all predictions for product_id: {product_id}")
     execute_query(
         """
-            DELETE FROM miner_predictions WHERE product_id = %s
+            DELETE FROM miner_predictions WHERE product_id = ?
         """,
-        params=(product_id)
+        params=(product_id,)
     )
     """Deletes a product from the database by product_id."""
     return execute_query(
         """
-            DELETE FROM products WHERE _id = %s
+            DELETE FROM products WHERE _id = ?
         """,
-        params=(product_id)
+        params=(product_id,)
     )
 
 
