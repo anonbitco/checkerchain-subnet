@@ -1,14 +1,18 @@
 import asyncio
 
 from neurons.miner import Miner
-import template
-from template.miner.llm import ReviewScoreSchema, ScoreBreakdown, generate_review_score
-from template.utils.checker_chain import fetch_product_data
+import checkerchain
+from checkerchain.miner.llm import (
+    ReviewScoreSchema,
+    ScoreBreakdown,
+    generate_review_score,
+)
+from checkerchain.utils.checker_chain import fetch_product_data
 import bittensor as bt
 
 
 def get_overall_score(ai_response: ReviewScoreSchema):
-    if (isinstance(ai_response, ReviewScoreSchema)):
+    if isinstance(ai_response, ReviewScoreSchema):
         breakdown = ai_response.breakdown
     else:
         return None
@@ -24,19 +28,18 @@ def get_overall_score(ai_response: ReviewScoreSchema):
         "marketing": 1.5,
         "roadmap": 1,
         "clarity": 0.5,
-        "partnerships": 1
+        "partnerships": 1,
     }
 
     field_names = ScoreBreakdown.model_fields.keys()
     scores = {field: getattr(breakdown, field) for field in field_names}
 
-    overall_score: float = sum(
-        float(scores[key]) * weights[key] for key in scores)
+    overall_score: float = sum(float(scores[key]) * weights[key] for key in scores)
 
     return round(overall_score, 2)  # Rounds the score to 2 decimal places
 
 
-async def forward(self: Miner, synapse: template.protocol.CheckerChainSynapse):
+async def forward(self: Miner, synapse: checkerchain.protocol.CheckerChainSynapse):
     """
     Asynchronously fetch product data and generate review scores in parallel.
     """
@@ -61,8 +64,7 @@ async def forward(self: Miner, synapse: template.protocol.CheckerChainSynapse):
                 raise res  # Re-raise exception to handle it below
             score = get_overall_score(res)
             predictions.append(score)
-            bt.logging.info(
-                f"Score for product {synapse.query[index]}: {score}")
+            bt.logging.info(f"Score for product {synapse.query[index]}: {score}")
         except Exception as e:
             print(f"Error processing result: {e}")
             predictions.append(None)  # Default value or handle differently

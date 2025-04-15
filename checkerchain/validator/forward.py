@@ -21,12 +21,17 @@ import time
 import bittensor as bt
 import numpy as np
 
-from template.protocol import CheckerChainSynapse
-from template.utils.sqlite_utils import add_prediction, delete_a_product, get_predictions_for_product, get_products
-from template.validator.reward import get_rewards
-from template.utils.uids import get_random_uids
+from checkerchain.protocol import CheckerChainSynapse
+from checkerchain.utils.sqlite_utils import (
+    add_prediction,
+    delete_a_product,
+    get_predictions_for_product,
+    get_products,
+)
+from checkerchain.validator.reward import get_rewards
+from checkerchain.utils.uids import get_random_uids
 from neurons.validator import Validator
-from template.utils.checker_chain import fetch_products
+from checkerchain.utils.checker_chain import fetch_products
 
 
 async def forward(self: Validator):
@@ -44,7 +49,6 @@ async def forward(self: Validator):
     # miner_uids = get_random_uids(self, k=self.config.neuron.sample_size)
     # miner_uids = [5]
     miner_uids = self.metagraph.uids.tolist()
-    print(miner_uids)
     # The dendrite client queries the network.
     # define product id to get scores for
 
@@ -52,7 +56,7 @@ async def forward(self: Validator):
     data = fetch_products()
 
     bt.logging.info(f"Products to send to miners: {data.unmined_products}")
-    if (len(data.reward_items)):
+    if len(data.reward_items):
         bt.logging.info(f"Product to score: {data.reward_items[0]._id}")
     else:
         bt.logging.info(f"No products to score")
@@ -83,8 +87,7 @@ async def forward(self: Validator):
 
     if data.reward_items:
         reward_product = data.reward_items[0]
-        product_predictions = get_predictions_for_product(
-            reward_product._id) or []
+        product_predictions = get_predictions_for_product(reward_product._id) or []
 
         predictions = [p["prediction"] for p in product_predictions]
         miner_ids = [p["miner_id"] for p in product_predictions]
@@ -108,4 +111,4 @@ async def forward(self: Validator):
         delete_a_product(reward_product._id)
 
     # TODO: One hour until next validation ??
-    time.sleep(60*24)
+    time.sleep(10)

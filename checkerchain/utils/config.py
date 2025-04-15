@@ -21,13 +21,17 @@ import subprocess
 import argparse
 import bittensor as bt
 from .logging import setup_events_logger
+import dotenv
+
+dotenv.load_dotenv()
+
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def is_cuda_available():
     try:
-        output = subprocess.check_output(
-            ["nvidia-smi", "-L"], stderr=subprocess.STDOUT
-        )
+        output = subprocess.check_output(["nvidia-smi", "-L"], stderr=subprocess.STDOUT)
         if "NVIDIA" in output.decode("utf-8"):
             return "cuda"
     except Exception:

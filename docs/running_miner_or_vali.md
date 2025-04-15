@@ -85,6 +85,8 @@ Faucet is disabled on the testnet. Hence, if you don't have sufficient faucet to
 
 This step registers subnet miner key to the subnet.
 
+Copy `.env.example` to `.env` and update your `OPENAI_API_KEY`
+
 Register your miner key to the subnet:\
 \***\*Remove `--subtensor.network test` for mainnet\*\***
 

@@ -22,10 +22,10 @@ import typing
 import bittensor as bt
 
 # Bittensor Miner Template:
-import template
+import checkerchain
 
 # import base miner class which takes care of most of the boilerplate
-from template.base.miner import BaseMinerNeuron
+from checkerchain.base.miner import BaseMinerNeuron
 
 
 class Miner(BaseMinerNeuron):
@@ -43,9 +43,10 @@ class Miner(BaseMinerNeuron):
         # TODO(developer): Anything specific to your use case you can do here
 
     async def forward(
-        self, synapse: template.protocol.CheckerChainSynapse
-    ) -> template.protocol.CheckerChainSynapse:
-        from template.miner.forward import forward
+        self, synapse: checkerchain.protocol.CheckerChainSynapse
+    ) -> checkerchain.protocol.CheckerChainSynapse:
+        from checkerchain.miner.forward import forward
+
         """
         Args:
             synapse (template.protocol.Dummy): The synapse object containing the 'dummy_input' data.
@@ -59,7 +60,7 @@ class Miner(BaseMinerNeuron):
         return await forward(self, synapse=synapse)
 
     async def blacklist(
-        self, synapse: template.protocol.CheckerChainSynapse
+        self, synapse: checkerchain.protocol.CheckerChainSynapse
     ) -> typing.Tuple[bool, str]:
         """
         Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
@@ -92,8 +93,7 @@ class Miner(BaseMinerNeuron):
         """
 
         if synapse.dendrite is None or synapse.dendrite.hotkey is None:
-            bt.logging.warning(
-                "Received a request without a dendrite or hotkey.")
+            bt.logging.warning("Received a request without a dendrite or hotkey.")
             return True, "Missing dendrite or hotkey"
 
         # TODO(developer): Define how miners should blacklist requests.
@@ -121,7 +121,9 @@ class Miner(BaseMinerNeuron):
         )
         return False, "Hotkey recognized!"
 
-    async def priority(self, synapse: template.protocol.CheckerChainSynapse) -> float:
+    async def priority(
+        self, synapse: checkerchain.protocol.CheckerChainSynapse
+    ) -> float:
         """
         The priority function determines the order in which requests are handled. More valuable or higher-priority
         requests are processed before others. You should design your own priority mechanism with care.
@@ -142,8 +144,7 @@ class Miner(BaseMinerNeuron):
         - A higher stake results in a higher priority value.
         """
         if synapse.dendrite is None or synapse.dendrite.hotkey is None:
-            bt.logging.warning(
-                "Received a request without a dendrite or hotkey.")
+            bt.logging.warning("Received a request without a dendrite or hotkey.")
             return 0.0
 
         # TODO(developer): Define how miners should prioritize requests.

@@ -21,7 +21,7 @@ from typing import List
 import bittensor as bt
 from typing import List, Dict
 
-from template.types.checker_chain import ReviewedProduct
+from checkerchain.types.checker_chain import ReviewedProduct
 
 
 # def normalize(value: float, min_val: float, max_val: float) -> float:
@@ -91,9 +91,8 @@ from template.types.checker_chain import ReviewedProduct
 #         [reward(response, last_epoch_reviewed_products) for response in responses]
 #     )
 
-def reward(
-    prediction:  float, actual: float
-) -> float:
+
+def reward(prediction: float, actual: float) -> float:
     """
     Reward the miner response to the dummy request. This method returns a reward
     value for the miner, which is used to update the miner's score.
@@ -122,6 +121,5 @@ def get_rewards(
     """
     # Get all the reward results by iteratively calling your reward() function.
     return np.array(
-        [reward(response, reviewed_product.trustScore)
-         for response in responses]
+        [reward(response, reviewed_product.trustScore) for response in responses]
     )

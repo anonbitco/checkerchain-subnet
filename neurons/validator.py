@@ -24,11 +24,11 @@ import time
 import bittensor as bt
 
 # import base validator class which takes care of most of the boilerplate
-from template.base.validator import BaseValidatorNeuron
+from checkerchain.base.validator import BaseValidatorNeuron
 
 # Bittensor Validator Template:
-from template.utils.sqlite_utils import create_db
-from template.validator import forward
+from checkerchain.utils.sqlite_utils import create_db
+from checkerchain.validator import forward
 
 
 class Validator(BaseValidatorNeuron):

@@ -23,10 +23,11 @@ import traceback
 
 import bittensor as bt
 
-from template.base.neuron import BaseNeuron
-from template.utils.config import add_miner_args
+from checkerchain.base.neuron import BaseNeuron
+from checkerchain.utils.config import add_miner_args
 
 from typing import Union
+from checkerchain.utils.config import OPENAI_API_KEY
 
 
 class BaseMinerNeuron(BaseNeuron):
@@ -43,6 +44,14 @@ class BaseMinerNeuron(BaseNeuron):
 
     def __init__(self, config=None):
         super().__init__(config=config)
+
+        if not OPENAI_API_KEY:
+            bt.logging.error(
+                "OPENAI_API_KEY is not set. Please set it in your environment variables."
+            )
+            raise ValueError(
+                "OPENAI_API_KEY is not set. Please set it in your environment variables."
+            )
 
         # Warn if allowing incoming requests from anyone.
         if not self.config.blacklist.force_validator_permit:

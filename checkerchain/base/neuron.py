@@ -23,10 +23,10 @@ import bittensor as bt
 from abc import ABC, abstractmethod
 
 # Sync calls set weights and also resyncs the metagraph.
-from template.utils.config import check_config, add_args, config
-from template.utils.misc import ttl_get_block
-from template import __spec_version__ as spec_version
-from template.mock import MockSubtensor, MockMetagraph
+from checkerchain.utils.config import check_config, add_args, config
+from checkerchain.utils.misc import ttl_get_block
+from checkerchain import __spec_version__ as spec_version
+from checkerchain.mock import MockSubtensor, MockMetagraph
 
 
 class BaseNeuron(ABC):
@@ -71,9 +71,6 @@ class BaseNeuron(ABC):
 
         # If a gpu is required, set the device to cuda:N (e.g. cuda:0)
         self.device = self.config.neuron.device
-
-        # Log the configuration for reference.
-        bt.logging.info(self.config)
 
         # Build Bittensor objects
         # These are core Bittensor classes to interact with the network.

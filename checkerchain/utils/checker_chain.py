@@ -1,8 +1,18 @@
 from dataclasses import dataclass
 from typing import List
 import requests
-from template.utils.sqlite_utils import add_product, get_products, update_product_status
-from template.types.checker_chain import ReviewedProduct, ReviewedProductsApiResponse, UnreviewedProductApiResponse, UnreviewedProductsApiResponse
+import bittensor as bt
+from checkerchain.utils.sqlite_utils import (
+    add_product,
+    get_products,
+    update_product_status,
+)
+from checkerchain.types.checker_chain import (
+    ReviewedProduct,
+    ReviewedProductsApiResponse,
+    UnreviewedProductApiResponse,
+    UnreviewedProductsApiResponse,
+)
 
 
 @dataclass
@@ -14,30 +24,34 @@ class FetchProductsReturnType:
 def fetch_products():
     # Reviewed products
     url_reviewed = "https://api.checkerchain.com/api/v1/products?page=1&limit=30"
+    url_unreviewed = "https://api.checkerchain.com/api/v1/products?page=1&limit=1"
     # Unreviewed (published) products
-    url_unreviewed = "https://api.checkerchain.com/api/v1/products?page=1&limit=30&status=published"
+    # url_unreviewed = "https://api.checkerchain.com/api/v1/products?page=1&limit=30&status=published"
 
     response_reviewed = requests.get(url_reviewed)
     response_unreviewed = requests.get(url_unreviewed)
 
     if response_reviewed.status_code != 200:
-        print(
-            f"Error fetching reviewed products: {response_reviewed.status_code}")
+        bt.logging.error(
+            f"Error fetching reviewed products: {response_reviewed.status_code}"
+        )
         return FetchProductsReturnType([], [])
 
     if response_unreviewed.status_code != 200:
-        print(
-            f"Error fetching unreviewed products: {response_unreviewed.status_code}")
+        bt.logging.errorint(
+            f"Error fetching unreviewed products: {response_unreviewed.status_code}"
+        )
         return FetchProductsReturnType([], [])
 
-    reviewed_response = ReviewedProductsApiResponse.from_dict(
-        response_reviewed.json())
+    reviewed_response = ReviewedProductsApiResponse.from_dict(response_reviewed.json())
     unreviewed_response = UnreviewedProductsApiResponse.from_dict(
-        response_unreviewed.json())
+        response_unreviewed.json()
+    )
 
-    if not isinstance(reviewed_response, ReviewedProductsApiResponse) or not isinstance(unreviewed_response, UnreviewedProductsApiResponse):
+    if not isinstance(reviewed_response, ReviewedProductsApiResponse) or not isinstance(
+        unreviewed_response, UnreviewedProductsApiResponse
+    ):
         return FetchProductsReturnType([], [])
-    print("products are really products")
 
     reviewed_products = reviewed_response.data.products
     unreviewed_products = unreviewed_response.data.products
@@ -67,12 +81,12 @@ def fetch_product_data(product_id):
     url = f"https://backend.checkerchain.com/api/v1/products/{product_id}"
     response = requests.get(url)
     if response.status_code == 200:
-        productData = UnreviewedProductApiResponse.from_dict(
-            response.json())
+        productData = UnreviewedProductApiResponse.from_dict(response.json())
         if not (isinstance(productData, UnreviewedProductApiResponse)):
             return None
         return productData.data
     else:
-        print("Error fetching product data:",
-              response.status_code, response.text)
+        bt.logging.error(
+            "Error fetching product data:", response.status_code, response.text
+        )
         return None

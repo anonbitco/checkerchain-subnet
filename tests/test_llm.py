@@ -1,11 +1,15 @@
-
 import asyncio
-from template.miner.forward import get_overall_score
-from template.miner.llm import generate_review_score
-from template.types.checker_chain import Category, CreatedBy, Operation, UnreviewedProduct
+from checkerchain.miner.forward import get_overall_score
+from checkerchain.miner.llm import generate_review_score
+from checkerchain.types.checker_chain import (
+    Category,
+    CreatedBy,
+    Operation,
+    UnreviewedProduct,
+)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     product = UnreviewedProduct(
         "asdfljk",
         "Celo",
@@ -25,9 +29,18 @@ if __name__ == '__main__':
         "https://x.com/celo",
         False,
         False,
-        "elrond", CreatedBy("asdfjkl", "erd1nznndfle036nfeqm4q7kuvswwlpfwre8myxkdgjs5exdw57473uqydymat",
-                            "piyushburlakoti", 89.62, "Interested in crypto", "Piyush Burlakoti", "/images/users/1734097153445.webp"),
-        [], "published",
+        "elrond",
+        CreatedBy(
+            "asdfjkl",
+            "erd1nznndfle036nfeqm4q7kuvswwlpfwre8myxkdgjs5exdw57473uqydymat",
+            "piyushburlakoti",
+            89.62,
+            "Interested in crypto",
+            "Piyush Burlakoti",
+            "/images/users/1734097153445.webp",
+        ),
+        [],
+        "published",
         1741533261645,
         [],
         "2025-03-08T15:13:45.673Z",
@@ -35,7 +48,11 @@ if __name__ == '__main__':
         0,
         "/images/products/1741446826191.jpg",
         "/images/products/1741446826414.jpg",
-        19, 0, "67cc5ea9040c09b84a280c9a", 0, False
+        19,
+        0,
+        "67cc5ea9040c09b84a280c9a",
+        0,
+        False,
     )
     review_by_llm = asyncio.run(generate_review_score(product))
     print(review_by_llm)
