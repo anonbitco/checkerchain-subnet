@@ -79,7 +79,7 @@ Faucet is disabled on the testnet. Hence, if you don't have sufficient faucet to
 ## 4. Register keys
 
 **_Testnet NETUID: `315`_** \
-**_Mainnet NETUID: `Coming Soon`_**
+**_Mainnet NETUID: `87`_**
 
 #### Registering Miner
 
@@ -88,10 +88,10 @@ This step registers subnet miner key to the subnet.
 Copy `.env.example` to `.env` and update your `OPENAI_API_KEY`
 
 Register your miner key to the subnet:\
-\***\*Remove `--subtensor.network test` for mainnet\*\***
+\***\*Add `--subtensor.network test` for testnet\*\***
 
 ```bash
-btcli subnet register --netuid [checkerchain-netuid] --subtensor.network test --wallet.name miner --wallet.hotkey default
+btcli subnet register --netuid 87 --wallet.name miner --wallet.hotkey default
 ```
 
 Follow the below prompts:
@@ -110,10 +110,10 @@ Follow the below prompts:
 This step registers subnet validator key to the subnet.
 
 Register your validator key to the subnet:\
-\***\*Remove `--subtensor.network test` for mainnet\*\***
+\***\*Add `--subtensor.network test` for testnet\*\***
 
 ```bash
-btcli subnet register --netuid [checkerchain-netuid] --subtensor.network test --wallet.name validator --wallet.hotkey default
+btcli subnet register --netuid 87 --wallet.name validator --wallet.hotkey default
 ```
 
 Follow the prompts:
@@ -129,14 +129,14 @@ Follow the prompts:
 
 ## 5. Check that your keys have been registered
 
-\***\*Remove `--subtensor.network test` for mainnet\*\***
+\***\*Add `--subtensor.network test` for testnet\*\***
 
 This step returns information about your registered keys.
 
 Check that your validator key has been registered:
 
 ```bash
-btcli wallet overview --wallet.name validator --subtensor.network test
+btcli wallet overview --wallet.name validator
 ```
 
 The above command will display the below:
@@ -152,7 +152,7 @@ miner    default  0      True   0.00000  0.00000  0.00000    0.00000    0.00000 
 Check that your miner has been registered:
 
 ```bash
-btcli wallet overview --wallet.name miner --subtensor.network test
+btcli wallet overview --wallet.name miner
 ```
 
 The above command will display the below:
@@ -170,25 +170,13 @@ miner    default  1      True   0.00000  0.00000  0.00000    0.00000    0.00000 
 Run the subnet miner:
 
 ```bash
-python neurons/miner.py --netuid 315 --subtensor.network test --wallet.name miner --wallet.hotkey default --logging.debug
-```
-
-You will see the below terminal output:
-
-```bash
->> 2023-08-08 16:58:11.223 |       INFO       | Running miner for subnet: 1 on network: ws://127.0.0.1:9946 with config: ...
+python neurons/miner.py --netuid 87 --wallet.name miner --wallet.hotkey default --logging.debug
 ```
 
 Next, run the subnet validator:
 
 ```bash
-python neurons/validator.py --netuid 315 --subtensor.network test --wallet.name validator --wallet.hotkey default --logging.debug
-```
-
-You will see the below terminal output:
-
-```bash
->> 2023-08-08 16:58:11.223 |       INFO       | Running validator for subnet: 1 on network: ws://127.0.0.1:9946 with config: ...
+python neurons/validator.py --netuid 87 --wallet.name validator --wallet.hotkey default --logging.debug
 ```
 
 ## 7. Stopping your nodes
