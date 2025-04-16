@@ -102,7 +102,6 @@ async def forward(self: Validator):
 
     bt.logging.info(f"Scored responses: {rewards}")
     bt.logging.info(f"Score ids: {miner_ids}")
-    print(rewards, miner_ids)
     # Ensure update_scores is always called with valid values
     self.update_scores(rewards, miner_ids)
 
@@ -111,4 +110,4 @@ async def forward(self: Validator):
         delete_a_product(reward_product._id)
 
     # TODO: One hour until next validation ??
-    time.sleep(10)
+    time.sleep(1 * 60 * 60)
