@@ -57,7 +57,8 @@ async def forward(self: Validator):
 
     bt.logging.info(f"Products to send to miners: {data.unmined_products}")
     if len(data.reward_items):
-        bt.logging.info(f"Product to score: {data.reward_items[0]._id}")
+        bt.logging.info(
+            f"Products to score: {[r._id for r in data.reward_items]}")
     else:
         bt.logging.info(f"No products to score")
 
@@ -83,22 +84,27 @@ async def forward(self: Validator):
     reward_product = None
     predictions = []
     miner_ids = miner_uids
-    rewards = np.zeros_like(miner_uids)
+    rewards = np.zeros_like(miner_uids, dtype=float)
 
     if data.reward_items:
-        reward_product = data.reward_items[0]
-        product_predictions = get_predictions_for_product(reward_product._id) or []
+        for reward_product in data.reward_items:
+            product_predictions = get_predictions_for_product(
+                reward_product._id) or []
+            if not product_predictions:
+                continue
 
-        predictions = [p["prediction"] for p in product_predictions]
-        miner_ids = [p["miner_id"] for p in product_predictions]
+            predictions = [p["prediction"] for p in product_predictions]
+            prediction_miners = [p["miner_id"] for p in product_predictions]
 
-        # Compute rewards only if there's a product to process
-        if reward_product:
-            rewards = get_rewards(
-                self,
-                reward_product,
-                responses=predictions,
-            )
+            _rewards = get_rewards(self, reward_product, responses=predictions)
+            print("Product ID: ", reward_product._id)
+            print("Miners: ", prediction_miners)
+            print("Rewards: ", _rewards)
+            for miner_id, reward in zip(prediction_miners, _rewards):
+                try:
+                    rewards[miner_id] += reward
+                except IndexError:
+                    continue
 
     bt.logging.info(f"Scored responses: {rewards}")
     bt.logging.info(f"Score ids: {miner_ids}")
@@ -106,8 +112,9 @@ async def forward(self: Validator):
     self.update_scores(rewards, miner_ids)
 
     # If a product was processed, delete it from the database
-    if reward_product:
-        delete_a_product(reward_product._id)
+    if data.reward_items:
+        for reward_product in data.reward_items:
+            delete_a_product(reward_product._id)
 
     # TODO: One hour until next validation ??
     time.sleep(1 * 60 * 60)
