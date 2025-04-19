@@ -10,6 +10,8 @@ from checkerchain.miner.llm import (
 from checkerchain.utils.checker_chain import fetch_product_data
 import bittensor as bt
 
+miner_preds = {}
+
 
 def get_overall_score(ai_response: ReviewScoreSchema):
     if isinstance(ai_response, ReviewScoreSchema):
@@ -42,32 +44,44 @@ def get_overall_score(ai_response: ReviewScoreSchema):
 async def forward(self: Miner, synapse: checkerchain.protocol.CheckerChainSynapse):
     """
     Asynchronously fetch product data and generate review scores in parallel.
+    Uses caching to avoid redundant OpenAI requests.
     """
     bt.logging.info(f"Received mine requests for products {synapse.query}")
 
     tasks = []
-    for product_id in synapse.query:
-        product = fetch_product_data(product_id)
-        if product:
-            tasks.append(generate_review_score(product))
+    product_ids = []
+    predictions = [None] * len(synapse.query)  # Placeholder for responses
 
-    bt.logging.info(f"Got Product details")
+    for i, product_id in enumerate(synapse.query):
+        if product_id in miner_preds:
+            bt.logging.info(
+                f"Using cached prediction for {product_id}: {miner_preds[product_id]}"
+            )
+            predictions[i] = miner_preds[product_id]
+        else:
+            product = fetch_product_data(product_id)
+            if product:
+                product_ids.append((i, product_id))  # To map back later
+                tasks.append(generate_review_score(product))
+            else:
+                bt.logging.warning(f"Product not found for {product_id}")
+                predictions[i] = None
 
-    # Execute all API calls concurrently
+    bt.logging.info("Running OpenAI scoring tasks...")
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # Extract overall scores safely, handling exceptions
-    predictions = []
-    for index, res in enumerate(results):
+    for task_index, result in enumerate(results):
+        i, product_id = product_ids[task_index]
         try:
-            if isinstance(res, Exception):
-                raise res  # Re-raise exception to handle it below
-            score = get_overall_score(res)
-            predictions.append(score)
-            bt.logging.info(f"Score for product {synapse.query[index]}: {score}")
+            if isinstance(result, Exception):
+                raise result
+            score = get_overall_score(result)
+            predictions[i] = score
+            miner_preds[product_id] = score  # Save to cache
+            bt.logging.info(f"Score for product {product_id}: {score}")
         except Exception as e:
-            print(f"Error processing result: {e}")
-            predictions.append(None)  # Default value or handle differently
+            bt.logging.error(f"Error scoring product {product_id}: {e}")
+            predictions[i] = None
 
     synapse.response = predictions
     return synapse
