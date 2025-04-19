@@ -92,7 +92,7 @@ from checkerchain.types.checker_chain import ReviewedProduct
 #     )
 
 
-def reward(prediction: float, actual: float) -> float:
+def reward(prediction: float | None, actual: float) -> float:
     """
     Reward the miner response to the dummy request. This method returns a reward
     value for the miner, which is used to update the miner's score.
@@ -100,14 +100,16 @@ def reward(prediction: float, actual: float) -> float:
     Returns:
     - float: The reward value for the miner.
     """
-    score = 100 - abs(prediction - actual)
+    score = 0
+    if prediction:
+        score = 100 - abs(prediction - actual)
     return score
 
 
 def get_rewards(
     self,
     reviewed_product: ReviewedProduct,
-    responses: List[float],
+    responses: List[float | None],
 ) -> np.ndarray:
     """
     Returns an array of rewards for the given query and responses.
@@ -129,13 +131,11 @@ def get_rewards(
     }
 
     keep_count = int(np.ceil(0.6 * len(rewards_dict)))
-    top_indices = sorted(rewards_dict, key=rewards_dict.get,
-                         reverse=True)[:keep_count]
+    top_indices = sorted(rewards_dict, key=rewards_dict.get, reverse=True)[:keep_count]
     kept_indices = set(top_indices)
 
     # Get all the reward results by iteratively calling your reward() function.
     final_rewards = [
-        rewards_dict[i] if i in kept_indices else 0.0
-        for i in range(len(responses))
+        rewards_dict[i] if i in kept_indices else 0.0 for i in range(len(responses))
     ]
     return np.array(final_rewards)
