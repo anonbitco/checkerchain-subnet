@@ -11,7 +11,7 @@ def get_db_connection():
     return conn
 
 
-def execute_query(query, params=(), commit=False, fetch=False):
+def execute_query(query, params=(), commit=True, fetch=False):
     """Helper function to execute a query (insert, update, delete) and optionally commit or fetch results."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -174,14 +174,14 @@ def delete_a_product(product_id: str):
         """
             DELETE FROM miner_predictions WHERE product_id = ?
         """,
-        params=(product_id,)
+        params=(product_id,),
     )
     """Deletes a product from the database by product_id."""
     return execute_query(
         """
             DELETE FROM products WHERE _id = ?
         """,
-        params=(product_id,)
+        params=(product_id,),
     )
 
 
@@ -271,8 +271,7 @@ if __name__ == "__main__":
         print(dict(prediction))  # Convert to dictionary for easier reading
 
     # Updating product status
-    update_product_status(
-        "P001", check_chain_review_done=False, mining_done=True)
+    update_product_status("P001", check_chain_review_done=False, mining_done=True)
 
     # Removing a product
     remove_product("P002")

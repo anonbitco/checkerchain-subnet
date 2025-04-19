@@ -65,6 +65,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
         self.scores = np.zeros(self.metagraph.n, dtype=np.float32)
+        self.last_scores = np.zeros(self.metagraph.n, dtype=np.float32)
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
@@ -218,7 +219,6 @@ class BaseValidatorNeuron(BaseNeuron):
         """
         Sets the validator weights to the metagraph hotkeys based on the scores it has received from the miners. The weights determine the trust and incentive level the validator assigns to miner nodes on the network.
         """
-
         # Check if self.scores contains any NaN values and log a warning if it does.
         if np.isnan(self.scores).any():
             bt.logging.warning(
@@ -353,7 +353,13 @@ class BaseValidatorNeuron(BaseNeuron):
         # shape: [ metagraph.n ]
         alpha: float = self.config.neuron.moving_average_alpha
         self.scores: np.ndarray = alpha * scattered_rewards + (1 - alpha) * self.scores
+        self.last_scores = copy.deepcopy(self.scores)
         bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+
+    def update_to_last_scores(self):
+        """Updates the last scores to the current scores."""
+        bt.logging.info("Falling back to last scores.")
+        self.scores = copy.deepcopy(self.last_scores)
 
     def save_state(self):
         """Saves the state of the validator to a file."""
@@ -365,6 +371,7 @@ class BaseValidatorNeuron(BaseNeuron):
             step=self.step,
             scores=self.scores,
             hotkeys=self.hotkeys,
+            last_scores=self.last_scores,
         )
 
     def load_state(self):
@@ -376,3 +383,4 @@ class BaseValidatorNeuron(BaseNeuron):
         self.step = state["step"]
         self.scores = state["scores"]
         self.hotkeys = state["hotkeys"]
+        self.last_scores = state["last_scores"]
