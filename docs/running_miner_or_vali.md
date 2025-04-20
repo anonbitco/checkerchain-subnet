@@ -182,3 +182,86 @@ python neurons/validator.py --netuid 87 --wallet.name validator --wallet.hotkey 
 ## 7. Stopping your nodes
 
 To stop your nodes, press CTRL + C in the terminal where the nodes are running.
+
+Sure! Here's a more detailed and well-formatted section for a **GitHub `README.md`** to help miners troubleshoot and ensure their setup is correct:
+
+---
+
+# 🛠️ Troubleshooting: Not Receiving Mine Requests?
+
+If your miner is not receiving mine requests while others are, it's likely an issue on your end. Here's a step-by-step checklist to help you diagnose and resolve it:
+
+### ✅ 1. Check if Your IP and Port Are Publicly Accessible
+
+Your miner must be reachable from the public internet. To verify:
+
+- Open a browser and navigate to your miner’s IP and port:
+
+  ```
+  http://<your-ip>:<your-port>
+  ```
+
+  For example:
+
+  ```
+  http://65.109.76.55:8091
+  ```
+
+- If it's working correctly, you should see a response like this:
+
+  ```json
+  {
+    "message": "Synapse name '' not found. Available synapses ['Synapse', 'CheckerChainSynapse']"
+  }
+  ```
+
+> 🔒 **Tip:** If you see a "connection refused" or "timeout" error, your port is likely closed. Check your firewall rules and VPS provider’s network configuration.
+
+---
+
+### 🚀 2. Ensure Miner Is Running in Background
+
+If your miner isn't running persistently, it won't handle any incoming requests. Use **PM2**, a production-grade process manager for Node.js and Python apps, to keep your miner alive and restart on failure or reboot.
+
+#### 🔧 PM2 Installation & Usage
+
+```bash
+# Install PM2 globally
+npm install -g pm2
+
+# Navigate to your miner directory
+cd /path/to/miner
+
+# Start the miner with PM2
+pm2 start miner.py --interpreter=python3 --name=miner-name
+
+# Save the process list to start on boot
+pm2 save
+pm2 startup
+```
+
+> 🧠 You can view logs using:
+>
+> ```bash
+> pm2 logs miner-name
+> ```
+
+> 📌 To stop or restart:
+>
+> ```bash
+> pm2 stop miner-name
+> pm2 restart miner-name
+> ```
+
+---
+
+### 🧪 3. Final Checklist
+
+- [ ] Is your `ip:port` reachable from a browser?
+- [ ] Is your firewall or VPS provider allowing inbound traffic on that port?
+- [ ] Is your miner process running in the background (PM2 recommended)?
+- [ ] Are you using the correct netuid and wallet keys?
+
+---
+
+Let me know if you'd like to auto-check port status in Python or bash as well.
