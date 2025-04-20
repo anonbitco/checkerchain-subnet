@@ -343,6 +343,18 @@ class BaseValidatorNeuron(BaseNeuron):
                 f"cannot be broadcast to uids array of shape {uids_array.shape}"
             )
 
+        max_uid = np.max(uids_array)
+        if max_uid >= len(self.scores):
+            old_size = len(self.scores)
+            new_size = max_uid + 1
+            bt.logging.info(
+                f"Expanding scores from {old_size} to {new_size} to include new uids.")
+
+            # Preserve previous scores and add zeros for new users
+            new_scores = np.zeros(new_size)
+            new_scores[:old_size] = self.scores
+            self.scores = new_scores
+
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
         scattered_rewards: np.ndarray = np.zeros_like(self.scores)
