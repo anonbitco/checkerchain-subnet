@@ -233,7 +233,7 @@ npm install -g pm2
 cd /path/to/miner
 
 # Start the miner with PM2
-pm2 start miner.py --interpreter=python3 --name=miner-name
+PYTHONPATH=. pm2 start neurons/miner.py   --interpreter /checkerchain/checkerchain-subnet/.venv/bin/python   --name miner   --   --netuid 87   --wallet.name miner-wallet  --wallet.hotkey default --axon.port 8091   --logging.debug
 
 # Save the process list to start on boot
 pm2 save
@@ -243,14 +243,14 @@ pm2 startup
 > 🧠 You can view logs using:
 >
 > ```bash
-> pm2 logs miner-name
+> pm2 logs miner
 > ```
 
 > 📌 To stop or restart:
 >
 > ```bash
-> pm2 stop miner-name
-> pm2 restart miner-name
+> pm2 stop miner
+> pm2 restart miner
 > ```
 
 ---
@@ -261,7 +261,3 @@ pm2 startup
 - [ ] Is your firewall or VPS provider allowing inbound traffic on that port?
 - [ ] Is your miner process running in the background (PM2 recommended)?
 - [ ] Are you using the correct netuid and wallet keys?
-
----
-
-Let me know if you'd like to auto-check port status in Python or bash as well.
