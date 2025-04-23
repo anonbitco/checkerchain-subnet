@@ -22,23 +22,47 @@ Next, `cd` into checkerchain-subnet repo directory:
 cd checkerchain-subnet # Enter the
 ```
 
-Create Python Virtual Environment:
+### Manual steps:
+
+#### Create Python Virtual Environment:
 
 ```bash
 python -m venv .venv
 
 ```
 
-Activate venv:
+#### Activate venv:
 
 ```bash
 source .venv/bin/activate  #use wsl2 for windows
 ```
 
-Install the checkerchain-subnet package:
+#### Install the checkerchain-subnet package:
 
 ```bash
 python -m pip install -e .
+```
+
+## Using Scripts (It will delete checker_db.db file):
+
+#### Validator
+
+```bash
+chmod +x scripts/setup_vali.sh
+./scripts/setup_vali.sh
+```
+
+#### Miner
+
+```bash
+chmod +x scripts/setup_miner.sh
+./scripts/setup_miner.sh
+```
+
+#### Activate Venv
+
+```bash
+source .venv/bin/activate
 ```
 
 ## 2. Create wallets
@@ -261,3 +285,38 @@ pm2 startup
 - [ ] Is your firewall or VPS provider allowing inbound traffic on that port?
 - [ ] Is your miner process running in the background (PM2 recommended)?
 - [ ] Are you using the correct netuid and wallet keys?
+
+### Topic: How can Miner Compete?
+
+In the CheckerChain subnet, miners play a crucial role in evaluating and scoring products based on trust signals. Here's how miners can effectively compete and contribute:
+
+#### ✅ Phase 1 Reward Distribution
+
+- **90% of miners will be rewarded** based on the quality of their responses.
+- Emphasis is on **accuracy**.
+
+#### 🧠 Model Strategy
+
+- Miners have two main paths:
+  - **Train their own AI models** tailored to predict trust scores.
+  - **Leverage robust existing models** (like GPT, Claude, etc.) for reliable outputs.
+
+#### 📝 Prompt Engineering
+
+- Miners can **design their own prompts** to extract high-quality, relevant insights.
+- Prompt creativity can lead to predictions that closely match the **actual trust score**.
+- Iterative refinement of prompts improves score alignment over time.
+
+#### 🔐 Reliability and Uptime
+
+- Ensure miner nodes are **always available and responsive**.
+- Use tools like `pm2` or Docker for stability in production environments.
+
+#### 🧪 Experiment and Iterate
+
+- Regularly test new scoring strategies, datasets, or prompt variations.
+- Use the testing environment to **benchmark changes** before deploying them live.
+
+---
+
+> 🚀 The goal is to be consistently close to the validator-approved trust scores. Those who optimize both **model accuracy** and **prompt quality** will thrive in the competition.

@@ -22,16 +22,18 @@ import bittensor as bt
 import numpy as np
 
 from checkerchain.protocol import CheckerChainSynapse
-from checkerchain.utils.sqlite_utils import (
+
+from checkerchain.database.actions import (
     add_prediction,
-    delete_a_product,
     get_predictions_for_product,
-    get_products,
+    delete_a_product,
+    db_get_unreviewd_products,
 )
 from checkerchain.validator.reward import get_rewards
 from checkerchain.utils.uids import get_random_uids
 from neurons.validator import Validator
 from checkerchain.utils.checker_chain import fetch_products
+from checkerchain.database.actions import get_products
 
 
 async def forward(self: Validator):
@@ -55,17 +57,20 @@ async def forward(self: Validator):
     # Fetch product data
     data = fetch_products()
 
-    bt.logging.info(f"Products to send to miners: {data.unmined_products}")
+    bt.logging.info(f"new products to send to miners: {data.unmined_products}")
     if len(data.reward_items):
         bt.logging.info(f"Products to score: {[r._id for r in data.reward_items]}")
-    else:
-        bt.logging.info(f"No products to score")
 
-    queries = data.unmined_products  # Get product IDs from CheckerChain API
+    if len(data.unmined_products):
+        queries = data.unmined_products  # Get product IDs from CheckerChain API
+    else:
+        unmined_db_products = db_get_unreviewd_products()
+        queries = {p._id for p in unmined_db_products}
+        bt.logging.info(f"Unmined products from DB: {queries}")
 
     responses = []
     # Query the miners if there are unmined products
-    if queries:
+    if len(queries):
         responses = await self.dendrite(
             axons=[self.metagraph.axons[uid] for uid in miner_uids],
             synapse=CheckerChainSynapse(query=queries),
@@ -77,6 +82,8 @@ async def forward(self: Validator):
         for miner_uid, miner_predictions in zip(miner_uids, responses):
             for product_id, prediction in zip(queries, miner_predictions):
                 add_prediction(product_id, miner_uid, prediction)
+    else:
+        bt.logging.info("No any products to send to miners.")
 
     # Get one product which has been reviewed and is ready to score.
     # Adjust the scores based on responses from miners.
@@ -91,13 +98,13 @@ async def forward(self: Validator):
             if not product_predictions:
                 continue
 
-            predictions = [p["prediction"] for p in product_predictions]
-            prediction_miners = [p["miner_id"] for p in product_predictions]
+            predictions = [p.prediction for p in product_predictions]
+            prediction_miners = [p.miner_id for p in product_predictions]
 
             _rewards = get_rewards(self, reward_product, responses=predictions)
-            print("Product ID: ", reward_product._id)
-            print("Miners: ", prediction_miners)
-            print("Rewards: ", _rewards)
+            bt.logging.info("Product ID: ", reward_product._id)
+            bt.logging.info("Miners: ", prediction_miners)
+            bt.logging.info("Rewards: ", _rewards)
             for miner_id, reward in zip(prediction_miners, _rewards):
                 if reward is None:
                     continue
@@ -106,8 +113,8 @@ async def forward(self: Validator):
                 except IndexError:
                     continue
 
-    bt.logging.info(f"Scored responses: {rewards}")
-    bt.logging.info(f"Score ids: {miner_ids}")
+        bt.logging.info(f"Scored responses: {rewards}")
+        bt.logging.info(f"Score ids: {miner_ids}")
     # Ensure update_scores is always called with valid values
 
     # If a product was processed, delete it from the database
@@ -119,4 +126,4 @@ async def forward(self: Validator):
         self.update_to_last_scores()
 
     # TODO: One hour until next validation ??
-    time.sleep(1 * 60 * 60)
+    time.sleep(10 * 60)  # 10 minutes
