@@ -1,5 +1,5 @@
 from functools import wraps
-from .db import SessionLocal  # or wherever you define SessionLocal
+from .db import SessionLocal
 
 
 def with_db_session(func):
