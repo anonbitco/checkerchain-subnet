@@ -286,7 +286,7 @@ pm2 startup
 - [ ] Is your miner process running in the background (PM2 recommended)?
 - [ ] Are you using the correct netuid and wallet keys?
 
-### Topic: How can Miner Compete?
+# 🏁 How can Miner Compete?
 
 In the CheckerChain subnet, miners play a crucial role in evaluating and scoring products based on trust signals. Here's how miners can effectively compete and contribute:
 
