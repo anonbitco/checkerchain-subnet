@@ -1,4 +1,5 @@
 from sqlalchemy import select, delete, update
+from sqlalchemy.dialects.sqlite import insert as sqlite_upsert
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from checkerchain.database.model import Product, MinerPrediction
@@ -51,18 +52,18 @@ def remove_product(session: Session, _id):
 
 @with_db_session
 def add_prediction(session: Session, product_id, miner_id, prediction):
-    try:
-        pred = (
-            session.query(MinerPrediction)
-            .filter_by(product_id=product_id, miner_id=miner_id)
-            .one()
+    query = (
+        sqlite_upsert(MinerPrediction)
+        .values(product_id=product_id, miner_id=miner_id, prediction=prediction)
+        .on_conflict_do_update(
+            index_elements=[
+                "product_id",
+                "miner_id",
+            ],
+            set_=dict(prediction=prediction),
         )
-        pred.prediction = prediction
-    except NoResultFound:
-        pred = MinerPrediction(
-            product_id=product_id, miner_id=miner_id, prediction=prediction
-        )
-        session.add(pred)
+    )
+    session.execute(query)
     session.commit()
 
 

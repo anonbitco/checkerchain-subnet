@@ -30,10 +30,11 @@ from checkerchain.database.actions import (
     db_get_unreviewd_products,
 )
 from checkerchain.validator.reward import get_rewards
-from checkerchain.utils.uids import get_random_uids
 from neurons.validator import Validator
 from checkerchain.utils.checker_chain import fetch_products
-from checkerchain.database.actions import get_products
+from checkerchain.utils.config import IS_OWNER, STATS_SERVER_URL, JWT_SECRET
+import requests
+import json
 
 
 async def forward(self: Validator):
@@ -93,6 +94,7 @@ async def forward(self: Validator):
     rewards = np.zeros_like(miner_uids, dtype=float)
 
     if data.reward_items:
+        prediction_logs = []
         for reward_product in data.reward_items:
             product_predictions = get_predictions_for_product(reward_product._id) or []
             if not product_predictions:
@@ -109,9 +111,53 @@ async def forward(self: Validator):
                 if reward is None:
                     continue
                 try:
+                    index = prediction_miners.index(miner_id)
+                    prediction_logs.append(
+                        {
+                            "productId": reward_product._id,
+                            "productName": reward_product.name,
+                            "predictionScore": predictions[index],
+                            "actualScore": reward_product.trustScore,
+                            "hotkey": self.metagraph.hotkeys[miner_id],
+                            "coldkey": self.metagraph.coldkeys[miner_id],
+                        }
+                    )
                     rewards[miner_id] += reward
-                except IndexError:
+                except Exception as e:
+                    bt.logging.error(
+                        f"Error while processing product {reward_product._id}: {e}"
+                    )
                     continue
+
+        try:
+            # You don't need to worry about this part of the code, it's for data collection for owners
+            if IS_OWNER:
+                import jwt
+
+                token = jwt.encode(
+                    {"sub": self.metagraph.coldkeys[0]},
+                    JWT_SECRET,
+                    algorithm="HS256",
+                )
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                }
+                bt.logging.info(f"{STATS_SERVER_URL}/prediction/create", "url:")
+                result = requests.post(
+                    f"{STATS_SERVER_URL}/prediction/create",
+                    json=prediction_logs,
+                    headers=headers,
+                )
+                if result.status_code != 201:
+                    bt.logging.error(
+                        f"Error sending data to stats server: {result.status_code}"
+                    )
+                else:
+                    bt.logging.info("Successfully sent data to stats server")
+        except Exception as e:
+            bt.logging.error("Error while sending data to stats server", e)
+            bt.logging.error(prediction_logs)
 
         bt.logging.info(f"Scored responses: {rewards}")
         bt.logging.info(f"Score ids: {miner_ids}")
