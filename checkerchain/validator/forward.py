@@ -120,6 +120,7 @@ async def forward(self: Validator):
                             "actualScore": reward_product.trustScore,
                             "hotkey": self.metagraph.hotkeys[miner_id],
                             "coldkey": self.metagraph.coldkeys[miner_id],
+                            "uid": miner_id,
                         }
                     )
                     rewards[miner_id] += reward
