@@ -130,7 +130,7 @@ def get_rewards(
         if r != 0
     }
 
-    keep_count = int(np.ceil(0.6 * len(rewards_dict)))
+    keep_count = int(np.ceil(0.9 * len(rewards_dict)))
     top_indices = sorted(rewards_dict, key=rewards_dict.get, reverse=True)[:keep_count]
     kept_indices = set(top_indices)
 

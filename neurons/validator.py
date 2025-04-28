@@ -27,7 +27,6 @@ import bittensor as bt
 from checkerchain.base.validator import BaseValidatorNeuron
 
 # Bittensor Validator Template:
-from checkerchain.utils.sqlite_utils import create_db
 from checkerchain.validator import forward
 
 
@@ -63,7 +62,7 @@ class Validator(BaseValidatorNeuron):
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
-    create_db()
+    # create_db()
     with Validator() as validator:
         while True:
             bt.logging.info(f"Validator running... {time.time()}")

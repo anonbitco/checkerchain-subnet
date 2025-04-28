@@ -27,6 +27,10 @@ dotenv.load_dotenv()
 
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# you don't need to worry about these envs
+IS_OWNER = os.getenv("IS_OWNER")
+STATS_SERVER_URL = os.getenv("STATS_SERVER_URL")
+JWT_SECRET = os.getenv("JWT_SECRET")
 
 
 def is_cuda_available():
@@ -47,8 +51,6 @@ def is_cuda_available():
 
 def check_config(cls, config: "bt.Config"):
     r"""Checks/validates the config namespace object."""
-    bt.logging.check_config(config)
-
     full_path = os.path.expanduser(
         "{}/{}/{}/netuid{}/{}".format(
             config.logging.logging_dir,  # TODO: change from ~/.bittensor/miners to ~/.bittensor/neurons
@@ -58,7 +60,6 @@ def check_config(cls, config: "bt.Config"):
             config.neuron.name,
         )
     )
-    print("full path:", full_path)
     config.neuron.full_path = os.path.expanduser(full_path)
     if not os.path.exists(config.neuron.full_path):
         os.makedirs(config.neuron.full_path, exist_ok=True)

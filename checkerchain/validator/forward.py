@@ -22,16 +22,19 @@ import bittensor as bt
 import numpy as np
 
 from checkerchain.protocol import CheckerChainSynapse
-from checkerchain.utils.sqlite_utils import (
+
+from checkerchain.database.actions import (
     add_prediction,
-    delete_a_product,
     get_predictions_for_product,
-    get_products,
+    delete_a_product,
+    db_get_unreviewd_products,
 )
 from checkerchain.validator.reward import get_rewards
-from checkerchain.utils.uids import get_random_uids
 from neurons.validator import Validator
 from checkerchain.utils.checker_chain import fetch_products
+from checkerchain.utils.config import IS_OWNER, STATS_SERVER_URL, JWT_SECRET
+import requests
+import json
 
 
 async def forward(self: Validator):
@@ -55,17 +58,20 @@ async def forward(self: Validator):
     # Fetch product data
     data = fetch_products()
 
-    bt.logging.info(f"Products to send to miners: {data.unmined_products}")
+    bt.logging.info(f"new products to send to miners: {data.unmined_products}")
     if len(data.reward_items):
         bt.logging.info(f"Products to score: {[r._id for r in data.reward_items]}")
-    else:
-        bt.logging.info(f"No products to score")
 
-    queries = data.unmined_products  # Get product IDs from CheckerChain API
+    if len(data.unmined_products):
+        queries = data.unmined_products  # Get product IDs from CheckerChain API
+    else:
+        unmined_db_products = db_get_unreviewd_products()
+        queries = {p._id for p in unmined_db_products}
+        bt.logging.info(f"Unmined products from DB: {queries}")
 
     responses = []
     # Query the miners if there are unmined products
-    if queries:
+    if len(queries):
         responses = await self.dendrite(
             axons=[self.metagraph.axons[uid] for uid in miner_uids],
             synapse=CheckerChainSynapse(query=queries),
@@ -77,6 +83,8 @@ async def forward(self: Validator):
         for miner_uid, miner_predictions in zip(miner_uids, responses):
             for product_id, prediction in zip(queries, miner_predictions):
                 add_prediction(product_id, miner_uid, prediction)
+    else:
+        bt.logging.info("No any products to send to miners.")
 
     # Get one product which has been reviewed and is ready to score.
     # Adjust the scores based on responses from miners.
@@ -86,28 +94,80 @@ async def forward(self: Validator):
     rewards = np.zeros_like(miner_uids, dtype=float)
 
     if data.reward_items:
+        prediction_logs = []
         for reward_product in data.reward_items:
             product_predictions = get_predictions_for_product(reward_product._id) or []
             if not product_predictions:
                 continue
 
-            predictions = [p["prediction"] for p in product_predictions]
-            prediction_miners = [p["miner_id"] for p in product_predictions]
+            predictions = [p.prediction for p in product_predictions]
+            prediction_miners = [p.miner_id for p in product_predictions]
 
             _rewards = get_rewards(self, reward_product, responses=predictions)
-            print("Product ID: ", reward_product._id)
-            print("Miners: ", prediction_miners)
-            print("Rewards: ", _rewards)
+            bt.logging.info("Product ID: ", reward_product._id)
+            bt.logging.info("Miners: ", prediction_miners)
+            bt.logging.info("Rewards: ", _rewards)
             for miner_id, reward in zip(prediction_miners, _rewards):
                 if reward is None:
                     continue
                 try:
+                    index = prediction_miners.index(miner_id)
+                    prediction_score = predictions[index]
+                    if not prediction_score:
+                        bt.logging.warning(
+                            f"Prediction score is None for miner {miner_id} and product {reward_product._id}"
+                        )
+                        continue
+                    prediction_logs.append(
+                        {
+                            "productId": reward_product._id,
+                            "productName": reward_product.name,
+                            "predictionScore": prediction_score,
+                            "actualScore": reward_product.trustScore,
+                            "hotkey": self.metagraph.hotkeys[miner_id],
+                            "coldkey": self.metagraph.coldkeys[miner_id],
+                            "uid": miner_id,
+                        }
+                    )
                     rewards[miner_id] += reward
-                except IndexError:
+                except Exception as e:
+                    bt.logging.error(
+                        f"Error while processing product {reward_product._id}: {e}"
+                    )
                     continue
 
-    bt.logging.info(f"Scored responses: {rewards}")
-    bt.logging.info(f"Score ids: {miner_ids}")
+        try:
+            # You don't need to worry about this part of the code, it's for data collection for owners
+            if IS_OWNER:
+                import jwt
+
+                token = jwt.encode(
+                    {"sub": self.metagraph.coldkeys[0]},
+                    JWT_SECRET,
+                    algorithm="HS256",
+                )
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                }
+                bt.logging.info(f"{STATS_SERVER_URL}/prediction/create", "url:")
+                result = requests.post(
+                    f"{STATS_SERVER_URL}/prediction/create",
+                    json=prediction_logs,
+                    headers=headers,
+                )
+                if result.status_code != 201:
+                    bt.logging.error(
+                        f"Error sending data to stats server: {result.status_code}"
+                    )
+                else:
+                    bt.logging.info("Successfully sent data to stats server")
+        except Exception as e:
+            bt.logging.error("Error while sending data to stats server", e)
+            bt.logging.error(prediction_logs)
+
+        bt.logging.info(f"Scored responses: {rewards}")
+        bt.logging.info(f"Score ids: {miner_ids}")
     # Ensure update_scores is always called with valid values
 
     # If a product was processed, delete it from the database
@@ -119,4 +179,4 @@ async def forward(self: Validator):
         self.update_to_last_scores()
 
     # TODO: One hour until next validation ??
-    time.sleep(1 * 60 * 60)
+    time.sleep(10 * 60)  # 10 minutes

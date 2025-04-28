@@ -22,23 +22,47 @@ Next, `cd` into checkerchain-subnet repo directory:
 cd checkerchain-subnet # Enter the
 ```
 
-Create Python Virtual Environment:
+### Manual steps:
+
+#### Create Python Virtual Environment:
 
 ```bash
 python -m venv .venv
 
 ```
 
-Activate venv:
+#### Activate venv:
 
 ```bash
 source .venv/bin/activate  #use wsl2 for windows
 ```
 
-Install the checkerchain-subnet package:
+#### Install the checkerchain-subnet package:
 
 ```bash
 python -m pip install -e .
+```
+
+## Using Scripts (It will delete checker_db.db file):
+
+#### Validator
+
+```bash
+chmod +x scripts/setup_vali.sh
+./scripts/setup_vali.sh
+```
+
+#### Miner
+
+```bash
+chmod +x scripts/setup_miner.sh
+./scripts/setup_miner.sh
+```
+
+#### Activate Venv
+
+```bash
+source .venv/bin/activate
 ```
 
 ## 2. Create wallets
@@ -184,80 +208,3 @@ python neurons/validator.py --netuid 87 --wallet.name validator --wallet.hotkey 
 To stop your nodes, press CTRL + C in the terminal where the nodes are running.
 
 Sure! Here's a more detailed and well-formatted section for a **GitHub `README.md`** to help miners troubleshoot and ensure their setup is correct:
-
----
-
-# 🛠️ Troubleshooting: Not Receiving Mine Requests?
-
-If your miner is not receiving mine requests while others are, it's likely an issue on your end. Here's a step-by-step checklist to help you diagnose and resolve it:
-
-### ✅ 1. Check if Your IP and Port Are Publicly Accessible
-
-Your miner must be reachable from the public internet. To verify:
-
-- Open a browser and navigate to your miner’s IP and port:
-
-  ```
-  http://<your-ip>:<your-port>
-  ```
-
-  For example:
-
-  ```
-  http://65.109.76.55:8091
-  ```
-
-- If it's working correctly, you should see a response like this:
-
-  ```json
-  {
-    "message": "Synapse name '' not found. Available synapses ['Synapse', 'CheckerChainSynapse']"
-  }
-  ```
-
-> 🔒 **Tip:** If you see a "connection refused" or "timeout" error, your port is likely closed. Check your firewall rules and VPS provider’s network configuration.
-
----
-
-### 🚀 2. Ensure Miner Is Running in Background
-
-If your miner isn't running persistently, it won't handle any incoming requests. Use **PM2**, a production-grade process manager for Node.js and Python apps, to keep your miner alive and restart on failure or reboot.
-
-#### 🔧 PM2 Installation & Usage
-
-```bash
-# Install PM2 globally
-npm install -g pm2
-
-# Navigate to your miner directory
-cd /path/to/miner
-
-# Start the miner with PM2
-PYTHONPATH=. pm2 start neurons/miner.py   --interpreter /checkerchain/checkerchain-subnet/.venv/bin/python   --name miner   --   --netuid 87   --wallet.name miner-wallet  --wallet.hotkey default --axon.port 8091   --logging.debug
-
-# Save the process list to start on boot
-pm2 save
-pm2 startup
-```
-
-> 🧠 You can view logs using:
->
-> ```bash
-> pm2 logs miner
-> ```
-
-> 📌 To stop or restart:
->
-> ```bash
-> pm2 stop miner
-> pm2 restart miner
-> ```
-
----
-
-### 🧪 3. Final Checklist
-
-- [ ] Is your `ip:port` reachable from a browser?
-- [ ] Is your firewall or VPS provider allowing inbound traffic on that port?
-- [ ] Is your miner process running in the background (PM2 recommended)?
-- [ ] Are you using the correct netuid and wallet keys?

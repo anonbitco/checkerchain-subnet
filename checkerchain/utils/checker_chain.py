@@ -2,11 +2,8 @@ from dataclasses import dataclass
 from typing import List
 import requests
 import bittensor as bt
-from checkerchain.utils.sqlite_utils import (
-    add_product,
-    get_products,
-    update_product_status,
-)
+
+from checkerchain.database.actions import add_product, get_products
 from checkerchain.types.checker_chain import (
     ReviewedProduct,
     ReviewedProductsApiResponse,
@@ -59,7 +56,7 @@ def fetch_products():
 
     # Fetch existing product IDs from the database
     all_products = get_products()
-    existing_product_ids = {p["_id"] for p in all_products}
+    existing_product_ids = {p._id for p in all_products}
     unmined_products: List[str] = []
     reward_items: List[ReviewedProduct] = []
 
