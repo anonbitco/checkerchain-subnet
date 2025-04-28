@@ -112,11 +112,17 @@ async def forward(self: Validator):
                     continue
                 try:
                     index = prediction_miners.index(miner_id)
+                    prediction_score = predictions[index]
+                    if not prediction_score:
+                        bt.logging.warning(
+                            f"Prediction score is None for miner {miner_id} and product {reward_product._id}"
+                        )
+                        continue
                     prediction_logs.append(
                         {
                             "productId": reward_product._id,
                             "productName": reward_product.name,
-                            "predictionScore": predictions[index],
+                            "predictionScore": prediction_score,
                             "actualScore": reward_product.trustScore,
                             "hotkey": self.metagraph.hotkeys[miner_id],
                             "coldkey": self.metagraph.coldkeys[miner_id],
