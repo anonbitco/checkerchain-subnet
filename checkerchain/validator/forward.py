@@ -75,6 +75,7 @@ async def forward(self: Validator):
         responses = await self.dendrite(
             axons=[self.metagraph.axons[uid] for uid in miner_uids],
             synapse=CheckerChainSynapse(query=queries),
+            timeout=25,
             deserialize=True,
         )
         bt.logging.info(f"Received responses: {responses}")
