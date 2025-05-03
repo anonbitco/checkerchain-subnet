@@ -180,4 +180,4 @@ async def forward(self: Validator):
         self.update_to_last_scores()
 
     # TODO: One hour until next validation ??
-    time.sleep(10 * 60)  # 10 minutes
+    time.sleep(25 * 60)
