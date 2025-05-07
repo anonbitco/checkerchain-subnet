@@ -73,7 +73,6 @@ class BaseValidatorNeuron(BaseNeuron):
         except FileNotFoundError:
             bt.logging.warning("No state found. Initializing new state.")
 
-        print(f"Testing dataasdfasdfasdfds")
         self.step = 0
 
         self.sync()
