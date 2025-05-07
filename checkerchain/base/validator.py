@@ -68,6 +68,14 @@ class BaseValidatorNeuron(BaseNeuron):
         self.last_scores = np.zeros(self.metagraph.n, dtype=np.float32)
 
         # Init sync with the network. Updates the metagraph.
+        try:
+            self.load_state()
+        except FileNotFoundError:
+            bt.logging.warning("No state found. Initializing new state.")
+
+        print(f"Testing dataasdfasdfasdfds")
+        self.step = 0
+
         self.sync()
 
         # Serve axon to enable external connections.
@@ -348,7 +356,8 @@ class BaseValidatorNeuron(BaseNeuron):
             old_size = len(self.scores)
             new_size = max_uid + 1
             bt.logging.info(
-                f"Expanding scores from {old_size} to {new_size} to include new uids.")
+                f"Expanding scores from {old_size} to {new_size} to include new uids."
+            )
 
             # Preserve previous scores and add zeros for new users
             new_scores = np.zeros(new_size)
