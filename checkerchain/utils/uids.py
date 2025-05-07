@@ -63,7 +63,7 @@ def get_random_uids(self, k: int, exclude: List[int] = None) -> np.ndarray:
     return uids
 
 
-def get_filtered_uids(self, max_per_key: int = 5) -> np.ndarray:
+def get_filtered_uids(self, max_per_key: int = 15) -> np.ndarray:
     coldkeys = copy.deepcopy(self.metagraph.coldkeys)
     counts = {}
     available_uids = []
