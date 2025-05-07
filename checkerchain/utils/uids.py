@@ -2,6 +2,7 @@ import random
 import bittensor as bt
 import numpy as np
 from typing import List
+import copy
 
 
 def check_uid_availability(
@@ -59,4 +60,22 @@ def get_random_uids(self, k: int, exclude: List[int] = None) -> np.ndarray:
             k - len(candidate_uids),
         )
     uids = np.array(random.sample(available_uids, k))
+    return uids
+
+
+def get_filtered_uids(self, max_per_key: int = 15) -> np.ndarray:
+    coldkeys = copy.deepcopy(self.metagraph.coldkeys)
+    counts = {}
+    available_uids = []
+
+    for i, ck in enumerate(coldkeys):
+        cnt = counts.get(ck, 0)
+        if cnt < max_per_key:
+            if check_uid_availability(
+                self.metagraph, i, self.config.neuron.vpermit_tao_limit
+            ):
+                available_uids.append(i)
+            counts[ck] = cnt + 1
+
+    uids = np.array(available_uids)
     return uids
