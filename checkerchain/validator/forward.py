@@ -34,7 +34,7 @@ from neurons.validator import Validator
 from checkerchain.utils.checker_chain import fetch_products
 from checkerchain.utils.config import IS_OWNER, STATS_SERVER_URL, JWT_SECRET
 import requests
-import json
+from checkerchain.utils.uids import get_filtered_uids
 
 
 async def forward(self: Validator):
@@ -51,10 +51,9 @@ async def forward(self: Validator):
     # get_random_uids is an example method, but you can replace it with your own.
     # miner_uids = get_random_uids(self, k=self.config.neuron.sample_size)
     # miner_uids = [5]
-    miner_uids = self.metagraph.uids.tolist()
-    # The dendrite client queries the network.
-    # define product id to get scores for
+    miner_uids = get_filtered_uids(self)
 
+    bt.logging.info(f"Eligible Miner UIDs: {miner_uids}")
     # Fetch product data
     data = fetch_products()
 
@@ -179,5 +178,5 @@ async def forward(self: Validator):
     else:
         self.update_to_last_scores()
 
-    # TODO: One hour until next validation ??
+    # 25 mins until next validation ??
     time.sleep(25 * 60)
