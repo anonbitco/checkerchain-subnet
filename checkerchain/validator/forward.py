@@ -101,7 +101,7 @@ async def forward(self: Validator):
                 continue
 
             predictions = [p.prediction for p in product_predictions]
-            prediction_miners = [p.miner_id for p in product_predictions]
+            prediction_miners = [p.miner_id for p in product_predictions].sort()
 
             _rewards = get_rewards(self, reward_product, responses=predictions)
             bt.logging.info("Product ID: ", reward_product._id)
@@ -129,10 +129,10 @@ async def forward(self: Validator):
                             "uid": miner_id,
                         }
                     )
-                    rewards[miner_id] += reward
+                    rewards[index] += reward
                 except Exception as e:
                     bt.logging.error(
-                        f"Error while processing product {reward_product._id}: {e}"
+                        f"Error while processing product {reward_product._id}: {e.with_traceback()}"
                     )
                     continue
 
