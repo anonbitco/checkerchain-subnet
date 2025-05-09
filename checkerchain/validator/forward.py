@@ -101,13 +101,13 @@ async def forward(self: Validator):
                 continue
 
             predictions = [p.prediction for p in product_predictions]
-            prediction_miners = [p.miner_id for p in product_predictions].sort()
+            prediction_miners = [p.miner_id for p in product_predictions]
 
             _rewards = get_rewards(self, reward_product, responses=predictions)
             bt.logging.info("Product ID: ", reward_product._id)
             bt.logging.info("Miners: ", prediction_miners)
             bt.logging.info("Rewards: ", _rewards)
-            for miner_id, reward in zip(prediction_miners, _rewards):
+            for miner_id, reward in zip(sorted(prediction_miners), _rewards):
                 if reward is None:
                     continue
                 try:
