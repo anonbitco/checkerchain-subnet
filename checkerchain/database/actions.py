@@ -52,16 +52,19 @@ def remove_product(session: Session, _id):
 
 @with_db_session
 def add_prediction(session: Session, product_id, miner_id, prediction):
-    query = (
-        sqlite_upsert(MinerPrediction)
-        .values(product_id=product_id, miner_id=miner_id, prediction=prediction)
-        .on_conflict_do_update(
-            index_elements=[
-                "product_id",
-                "miner_id",
-            ],
-            set_=dict(prediction=prediction),
-        )
+    ups_stmt = sqlite_upsert(MinerPrediction).values(
+        product_id=product_id,
+        miner_id=int(miner_id),
+        prediction=float(prediction),
+    )
+    query = ups_stmt.on_conflict_do_update(
+        index_elements=[
+            "product_id",
+            "miner_id",
+        ],
+        set_=dict(
+            miner_id=ups_stmt.excluded.miner_id, prediction=ups_stmt.excluded.prediction
+        ),
     )
     session.execute(query)
     session.commit()
