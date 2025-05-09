@@ -55,7 +55,7 @@ def add_prediction(session: Session, product_id, miner_id, prediction):
     ups_stmt = sqlite_upsert(MinerPrediction).values(
         product_id=product_id,
         miner_id=int(miner_id),
-        prediction=float(prediction),
+        prediction=float(prediction) if prediction is not None else None,
     )
     query = ups_stmt.on_conflict_do_update(
         index_elements=[
