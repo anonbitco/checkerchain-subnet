@@ -108,7 +108,7 @@ async def forward(self: Validator):
             bt.logging.info("Miners: ", prediction_miners)
             bt.logging.info("Rewards: ", _rewards)
             for miner_id, reward in zip(sorted(prediction_miners), _rewards):
-                if reward is None:
+                if reward is None or miner_id not in miner_ids:
                     continue
                 try:
                     index = prediction_miners.index(miner_id)
