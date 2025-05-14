@@ -58,7 +58,9 @@ async def forward(self: Validator):
     data = fetch_products()
 
     bt.logging.info(f"new products to send to miners: {data.unmined_products}")
+    products_to_score = []
     if len(data.reward_items):
+        products_to_score = [r._id for r in data.reward_items]
         bt.logging.info(f"Products to score: {[r._id for r in data.reward_items]}")
 
     if len(data.unmined_products):
@@ -82,7 +84,8 @@ async def forward(self: Validator):
         # Add all responses to the database predictions table
         for miner_uid, miner_predictions in zip(miner_uids, responses):
             for product_id, prediction in zip(queries, miner_predictions):
-                add_prediction(product_id, miner_uid, prediction)
+                if product_id not in products_to_score:
+                    add_prediction(product_id, miner_uid, prediction)
     else:
         bt.logging.info("No any products to send to miners.")
 
