@@ -20,6 +20,7 @@
 import time
 import bittensor as bt
 import numpy as np
+import traceback
 
 from checkerchain.protocol import CheckerChainSynapse
 
@@ -103,22 +104,26 @@ async def forward(self: Validator):
             if not product_predictions:
                 continue
 
-            predictions = [p.prediction for p in product_predictions]
-            prediction_miners = [p.miner_id for p in product_predictions]
+            # predictions = [p.prediction for p in product_predictions]
+            # prediction_miners = [p.miner_id for p in product_predictions]
+            predictions = []
+            for pred in product_predictions:
+                if pred.miner_id in miner_ids:
+                    predictions.append(pred.prediction)
 
             _rewards = get_rewards(self, reward_product, responses=predictions)
             bt.logging.info("Product ID: ", reward_product._id)
-            bt.logging.info("Miners: ", prediction_miners)
+            bt.logging.info("Miners: ", miner_ids)
             bt.logging.info("Rewards: ", _rewards)
-            for miner_id, reward in zip(sorted(prediction_miners), _rewards):
-                if reward is None or miner_id not in miner_ids:
+            for i, (miner_id, reward, prediction_score) in enumerate(
+                zip(miner_ids, _rewards, predictions)
+            ):
+                if reward is None:
                     continue
                 try:
-                    index = prediction_miners.index(miner_id)
-                    prediction_score = predictions[index]
                     if not prediction_score:
                         bt.logging.warning(
-                            f"Prediction score is None for miner {miner_id} and product {reward_product._id}"
+                            f"Prediction score is None for miner {int(miner_id)} and product {reward_product._id}"
                         )
                         continue
                     prediction_logs.append(
@@ -129,13 +134,14 @@ async def forward(self: Validator):
                             "actualScore": reward_product.trustScore,
                             "hotkey": self.metagraph.hotkeys[miner_id],
                             "coldkey": self.metagraph.coldkeys[miner_id],
-                            "uid": miner_id,
+                            "uid": int(miner_id),
                         }
                     )
-                    rewards[index] += reward
+                    rewards[i] += reward
                 except Exception as e:
+                    tb = traceback.format_exc()
                     bt.logging.error(
-                        f"Error while processing product {reward_product._id}: {e.with_traceback()}"
+                        f"Error while processing product {reward_product._id}:\n{tb}"
                     )
                     continue
 
