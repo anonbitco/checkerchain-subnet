@@ -1,6 +1,6 @@
 <div align="center">
 
-# CheckerChain SN\_\_: Next-Gen AI-powered Trustless Crypto Review Platform <!-- omit in toc -->
+# CheckerChain SN87: Next-Gen AI-powered Trustless Crypto Review Platform <!-- omit in toc -->
 
 Check our [Whitepaper](https://docs.checkerchain.com/whitepaper/checkerchain-whitepaper-v2.0) for in-depth study on tRCM protocol of CheckerChain.
 
