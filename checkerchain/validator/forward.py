@@ -96,7 +96,6 @@ async def forward(self: Validator):
     predictions = []
     miner_ids = miner_uids
     rewards = np.zeros_like(miner_uids, dtype=float)
-
     if data.reward_items:
         prediction_logs = []
         for reward_product in data.reward_items:
@@ -107,16 +106,17 @@ async def forward(self: Validator):
             # predictions = [p.prediction for p in product_predictions]
             # prediction_miners = [p.miner_id for p in product_predictions]
             predictions = []
+            prediction_miners = []
             for pred in product_predictions:
                 if pred.miner_id in miner_ids:
                     predictions.append(pred.prediction)
-
+                    prediction_miners.append(pred.miner_id)
             _rewards = get_rewards(self, reward_product, responses=predictions)
             bt.logging.info("Product ID: ", reward_product._id)
             bt.logging.info("Miners: ", miner_ids)
             bt.logging.info("Rewards: ", _rewards)
             for i, (miner_id, reward, prediction_score) in enumerate(
-                zip(miner_ids, _rewards, predictions)
+                zip(prediction_miners, _rewards, predictions)
             ):
                 if reward is None:
                     continue
@@ -126,10 +126,12 @@ async def forward(self: Validator):
                             f"Prediction score is None for miner {int(miner_id)} and product {reward_product._id}"
                         )
                         continue
+                    idx = np.where(miner_ids == miner_id)[0][0]
                     prediction_logs.append(
                         {
                             "productId": reward_product._id,
                             "productName": reward_product.name,
+                            "productSlug": reward_product.slug,
                             "predictionScore": prediction_score,
                             "actualScore": reward_product.trustScore,
                             "hotkey": self.metagraph.hotkeys[miner_id],
@@ -137,7 +139,7 @@ async def forward(self: Validator):
                             "uid": int(miner_id),
                         }
                     )
-                    rewards[i] += reward
+                    rewards[idx] += reward
                 except Exception as e:
                     tb = traceback.format_exc()
                     bt.logging.error(
@@ -177,11 +179,11 @@ async def forward(self: Validator):
 
         bt.logging.info(f"Scored responses: {rewards}")
         bt.logging.info(f"Score ids: {miner_ids}")
-    # Ensure update_scores is always called with valid values
 
-    # If a product was processed, delete it from the database
-    if len(data.reward_items):
-        self.update_scores(rewards, miner_ids)
+        mask = rewards > 0
+        filtered_rewards = rewards[mask]
+        filtered_miner_ids = miner_uids[mask]
+        self.update_scores(filtered_rewards, filtered_miner_ids)
         for reward_product in data.reward_items:
             delete_a_product(reward_product._id)
     else:
