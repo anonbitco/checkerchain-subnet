@@ -56,10 +56,16 @@ async def forward(self: Validator):
     # miner_uids = get_random_uids(self, k=self.config.neuron.sample_size)
     # miner_uids = [5]
     miner_uids = get_filtered_uids(self)
+    bt.logging.info(f"Filtered miner UIDs for this round: {miner_uids}")
+    if not miner_uids:
+        bt.logging.warning("No miner UIDs eligible for this round. latest_miner_performance will likely be empty.")
 
-    bt.logging.info(f"Eligible Miner UIDs: {miner_uids}")
+    bt.logging.info(f"Eligible Miner UIDs: {miner_uids}") # This line seems redundant with the one above, but kept as per original structure
     # Fetch product data
     data = fetch_products()
+    bt.logging.info(f"Fetched product data. Unmined products count: {len(data.unmined_products)}, Reward items count: {len(data.reward_items)}")
+    if not data.reward_items:
+        bt.logging.warning("No reward items fetched. latest_miner_performance will likely be empty if it depends on reward_items processing.")
 
     bt.logging.info(f"new products to send to miners: {data.unmined_products}")
     products_to_score = []
@@ -100,6 +106,7 @@ async def forward(self: Validator):
     miner_ids = miner_uids
     rewards = np.zeros_like(miner_uids, dtype=float)
     if data.reward_items:
+        bt.logging.info(f"Starting processing of {len(data.reward_items)} reward items.")
         prediction_logs = []
         for reward_product in data.reward_items:
             product_predictions = get_predictions_for_product(reward_product._id) or []
@@ -186,6 +193,7 @@ async def forward(self: Validator):
         # Populate self.latest_miner_performance with the rewards from this round.
         # `rewards` array corresponds to the initial `miner_uids` list.
         # These are the raw/final scores for each UID for this validation round.
+        bt.logging.info(f"Attempting to populate latest_miner_performance. miner_uids count: {len(miner_uids)}, rewards array: {rewards.tolist()[:10]}... (first 10 or all if fewer)")
         if len(miner_uids) == len(rewards):
             for i, uid in enumerate(miner_uids):
                 self.latest_miner_performance[int(uid)] = float(rewards[i])

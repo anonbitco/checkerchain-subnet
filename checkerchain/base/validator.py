@@ -271,22 +271,32 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Dividend Check: Iterate through all UIDs and zero out scores for those with dividends > 0.
         # This must happen *after* initial rank-based weights are assigned.
-        uids_zeroed_by_dividend = []
-        for uid_check in self.metagraph.uids: # Iterate using a different variable name to avoid confusion
+        uids_actively_zeroed_by_dividend = []
+        uids_already_zero_with_dividend = []
+
+        for uid_check in self.metagraph.uids:
             # Ensure uid_check is within the bounds of ranked_scores and metagraph.dividends
             if uid_check < len(ranked_scores) and uid_check < len(self.metagraph.dividends):
                 if self.metagraph.dividends[uid_check] > 0:
-                    if ranked_scores[uid_check] > 0: # Only log if it was actually changed
-                        uids_zeroed_by_dividend.append(uid_check)
-                    bt.logging.info(f"UID {uid_check} has non-zero dividends ({self.metagraph.dividends[uid_check]}). Setting its ranked_score to 0.")
-                    ranked_scores[uid_check] = 0
+                    current_score = ranked_scores[uid_check]
+                    if current_score > 0:
+                        bt.logging.info(f"UID {uid_check} (score: {current_score}) has non-zero dividends ({self.metagraph.dividends[uid_check]}). Actively setting its ranked_score to 0.")
+                        ranked_scores[uid_check] = 0
+                        uids_actively_zeroed_by_dividend.append(uid_check)
+                    else:
+                        # Score was already zero, but has dividend. Just log this fact.
+                        bt.logging.info(f"UID {uid_check} (score: {current_score}) has non-zero dividends ({self.metagraph.dividends[uid_check]}). Score was already 0.")
+                        uids_already_zero_with_dividend.append(uid_check)
             else:
-                bt.logging.warning(f"UID {uid_check} is out of bounds for ranked_scores (len: {len(ranked_scores)}) or metagraph.dividends (len: {len(self.metagraph.dividends)}) during dividend check. Metagraph size: {self.metagraph.n}")
-        
-        if uids_zeroed_by_dividend:
-            bt.logging.info(f"UIDs zeroed out due to dividends: {uids_zeroed_by_dividend}")
+                bt.logging.warning(f"UID {uid_check} is out of bounds for ranked_scores or metagraph.dividends during dividend check. Metagraph size: {self.metagraph.n}")
+
+        if uids_actively_zeroed_by_dividend:
+            bt.logging.info(f"UIDs actively zeroed out due to dividends: {uids_actively_zeroed_by_dividend}")
         else:
-            bt.logging.info("No UIDs had their scores zeroed out due to dividends in this round.")
+            bt.logging.info("No UIDs had their scores actively changed from non-zero to zero due to dividends this round.")
+        
+        if uids_already_zero_with_dividend:
+            bt.logging.info(f"UIDs that already had zero score but possess non-zero dividends: {uids_already_zero_with_dividend}")
         
         final_ranked_scores_summary = {uid: score for uid, score in enumerate(ranked_scores) if score > 0}
         bt.logging.info(f"Ranked scores (after dividend check) summary: {final_ranked_scores_summary}")
@@ -319,17 +329,25 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.debug(f"Full raw_weights: {raw_weights.tolist()}")
         bt.logging.debug(f"UIDs for raw_weights (metagraph.uids): {str(self.metagraph.uids.tolist())}")
 
-        # Process the raw weights to final_weights via subtensor limitations.
-        (
-            processed_weight_uids,
-            processed_weights,
-        ) = process_weights_for_netuid(
-            uids=self.metagraph.uids,
-            weights=raw_weights,
-            netuid=self.config.netuid,
-            subtensor=self.subtensor,
-            metagraph=self.metagraph,
-        )
+        # NEW CONDITIONAL BLOCK STARTS HERE
+        if np.all(raw_weights == 0):
+            bt.logging.info("All raw_weights are zero. Preparing to set no weights on chain (processed_weights will be empty).")
+            processed_weight_uids = np.array([])
+            processed_weights = np.array([])
+        else:
+            # Process the raw weights to final_weights via subtensor limitations.
+            (
+                processed_weight_uids,
+                processed_weights,
+            ) = process_weights_for_netuid(
+                uids=self.metagraph.uids,
+                weights=raw_weights,
+                netuid=self.config.netuid,
+                subtensor=self.subtensor,
+                metagraph=self.metagraph,
+            )
+        # NEW CONDITIONAL BLOCK ENDS HERE
+        
         bt.logging.info(f"Processed weight UIDs (first 10): {processed_weight_uids.tolist()[:10]}...")
         bt.logging.info(f"Processed weights (first 10): {processed_weights.tolist()[:10]}...")
         bt.logging.debug(f"Full processed_weight_uids: {processed_weight_uids.tolist()}")
@@ -342,23 +360,30 @@ class BaseValidatorNeuron(BaseNeuron):
         ) = convert_weights_and_uids_for_emit(
             uids=processed_weight_uids, weights=processed_weights
         )
-        bt.logging.debug("uint_weights", uint_weights)
-        bt.logging.debug("uint_uids", uint_uids)
+        bt.logging.debug(f"uint_weights for emission: {uint_weights}")
+        bt.logging.debug(f"uint_uids for emission: {uint_uids}")
 
-        # Set the weights on chain via our subtensor connection.
-        result, msg = self.subtensor.set_weights(
-            wallet=self.wallet,
-            netuid=self.config.netuid,
-            uids=uint_uids,
-            weights=uint_weights,
-            wait_for_finalization=False,
-            wait_for_inclusion=False,
-            version_key=self.spec_version,
-        )
-        if result is True:
-            bt.logging.info("set_weights on chain successfully!")
+        # Check if there are any non-zero weights to set.
+        # convert_weights_and_uids_for_emit returns empty lists if all weights were zero or below threshold.
+        if not uint_weights:  # This implies uint_uids will also be empty
+            bt.logging.info("No non-zero weights to set for this round. Skipping chain submission.")
         else:
-            bt.logging.error(f"set_weights failed: {msg}")
+            # Set the weights on chain via our subtensor connection.
+            bt.logging.info(f"Attempting to set {len(uint_weights)} non-zero weights on chain.")
+            result, msg = self.subtensor.set_weights(
+                wallet=self.wallet,
+                netuid=self.config.netuid,
+                uids=uint_uids,
+                weights=uint_weights,
+                wait_for_finalization=False,
+                wait_for_inclusion=False,
+                version_key=self.spec_version,
+            )
+            if result is True:
+                bt.logging.info("set_weights on chain successfully!")
+            else:
+                bt.logging.error(f"set_weights failed: {msg}")
+        
         bt.logging.info("Finished set_weights operation.")
 
     def resync_metagraph(self):
