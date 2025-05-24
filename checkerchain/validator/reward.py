@@ -122,20 +122,13 @@ def get_rewards(
     - np.ndarray: An array of rewards for the given query and responses.
     """
     if reviewed_product.trustScore == 0:
-        return np.full(len(responses), 100 / len(responses))
+        return np.zeros(len(responses), dtype=np.float32)
 
     rewards_dict = {
         i: reward(r, reviewed_product.trustScore)
         for i, r in enumerate(responses)
-        if r != 0
     }
 
-    keep_count = int(np.ceil(0.9 * len(rewards_dict)))
-    top_indices = sorted(rewards_dict, key=rewards_dict.get, reverse=True)[:keep_count]
-    kept_indices = set(top_indices)
-
     # Get all the reward results by iteratively calling your reward() function.
-    final_rewards = [
-        rewards_dict[i] if i in kept_indices else 0.0 for i in range(len(responses))
-    ]
-    return np.array(final_rewards)
+    final_rewards = [rewards_dict.get(i, 0.0) for i in range(len(responses))]
+    return np.array(final_rewards, dtype=np.float32)

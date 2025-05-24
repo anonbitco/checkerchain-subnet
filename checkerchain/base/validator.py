@@ -66,6 +66,7 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info("Building validation weights.")
         self.scores = np.zeros(self.metagraph.n, dtype=np.float32)
         self.last_scores = np.zeros(self.metagraph.n, dtype=np.float32)
+        self.latest_miner_performance = {} # Initialize this attribute
 
         # Init sync with the network. Updates the metagraph.
         try:
@@ -76,6 +77,19 @@ class BaseValidatorNeuron(BaseNeuron):
         self.step = 0
 
         self.sync()
+
+        # --- UID Check ---
+        # TODO: Make TARGET_UID configurable (e.g., via config or environment variable)
+        TARGET_UID = 249
+        if hasattr(self, 'uid'):
+            if self.uid == TARGET_UID:
+                bt.logging.info(f"Validator confirmed to be running with target UID: {self.uid}.")
+            else:
+                bt.logging.error(f"Validator UID is {self.uid}, but expected {TARGET_UID}. Please ensure the correct hotkey is configured.")
+        else:
+            # This case should ideally not happen if sync() is called and works correctly.
+            bt.logging.error("Validator UID (self.uid) not found after sync. Cannot perform target UID check.")
+        # --- End UID Check ---
 
         # Serve axon to enable external connections.
         if not self.config.neuron.axon_off:
@@ -226,26 +240,85 @@ class BaseValidatorNeuron(BaseNeuron):
         """
         Sets the validator weights to the metagraph hotkeys based on the scores it has received from the miners. The weights determine the trust and incentive level the validator assigns to miner nodes on the network.
         """
-        # Check if self.scores contains any NaN values and log a warning if it does.
-        if np.isnan(self.scores).any():
-            bt.logging.warning(
-                f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
-            )
+        # Initialize ranked_scores array.
+        ranked_scores = np.zeros(self.metagraph.n, dtype=np.float32)
+        bt.logging.info("Starting set_weights operation.")
 
-        # Calculate the average reward for each uid across non-zero values.
-        # Replace any NaN values with 0.
-        # Compute the norm of the scores
-        norm = np.linalg.norm(self.scores, ord=1, axis=0, keepdims=True)
+        if not hasattr(self, 'latest_miner_performance') or not self.latest_miner_performance:
+            bt.logging.warning("No latest_miner_performance data available. Skipping rank-based weight setting. Setting all weights to zero.")
+            # ranked_scores is already initialized to zeros.
+        else:
+            bt.logging.info(f"Using latest_miner_performance (first 5 items): {dict(list(self.latest_miner_performance.items())[:5])}...")
+            bt.logging.debug(f"Full latest_miner_performance: {self.latest_miner_performance}")
+
+            # Rank miners based on accuracy_score.
+            # Sort by accuracy_score in descending order.
+            # self.latest_miner_performance is {uid: accuracy_score}
+            sorted_miners = sorted(self.latest_miner_performance.items(), key=lambda item: item[1], reverse=True)
+            
+            num_ranked_miners = len(sorted_miners)
+            bt.logging.info(f"Ranking {num_ranked_miners} miners based on performance.")
+            for rank, (uid, accuracy_score) in enumerate(sorted_miners):
+                if uid < self.metagraph.n: # Ensure UID is valid for the current metagraph
+                    # Assign weight based on rank: N - rank
+                    ranked_scores[uid] = num_ranked_miners - rank
+                else:
+                    bt.logging.warning(f"UID {uid} from latest_miner_performance is out of bounds for metagraph (size {self.metagraph.n}). Skipping.")
+            
+            initial_ranked_scores_summary = {uid: score for uid, score in enumerate(ranked_scores) if score > 0}
+            bt.logging.info(f"Initial ranked scores (before dividend check) summary: {initial_ranked_scores_summary}")
+            bt.logging.debug(f"Full initial ranked_scores before dividend check: {ranked_scores.tolist()}")
+
+        # Dividend Check: Iterate through all UIDs and zero out scores for those with dividends > 0.
+        # This must happen *after* initial rank-based weights are assigned.
+        uids_zeroed_by_dividend = []
+        for uid_check in self.metagraph.uids: # Iterate using a different variable name to avoid confusion
+            # Ensure uid_check is within the bounds of ranked_scores and metagraph.dividends
+            if uid_check < len(ranked_scores) and uid_check < len(self.metagraph.dividends):
+                if self.metagraph.dividends[uid_check] > 0:
+                    if ranked_scores[uid_check] > 0: # Only log if it was actually changed
+                        uids_zeroed_by_dividend.append(uid_check)
+                    bt.logging.info(f"UID {uid_check} has non-zero dividends ({self.metagraph.dividends[uid_check]}). Setting its ranked_score to 0.")
+                    ranked_scores[uid_check] = 0
+            else:
+                bt.logging.warning(f"UID {uid_check} is out of bounds for ranked_scores (len: {len(ranked_scores)}) or metagraph.dividends (len: {len(self.metagraph.dividends)}) during dividend check. Metagraph size: {self.metagraph.n}")
+        
+        if uids_zeroed_by_dividend:
+            bt.logging.info(f"UIDs zeroed out due to dividends: {uids_zeroed_by_dividend}")
+        else:
+            bt.logging.info("No UIDs had their scores zeroed out due to dividends in this round.")
+        
+        final_ranked_scores_summary = {uid: score for uid, score in enumerate(ranked_scores) if score > 0}
+        bt.logging.info(f"Ranked scores (after dividend check) summary: {final_ranked_scores_summary}")
+        bt.logging.debug(f"Full ranked_scores after dividend check: {ranked_scores.tolist()}")
+
+        # Check if ranked_scores contains any NaN values and log a warning if it does.
+        # This shouldn't happen with the current rank-based logic unless latest_miner_performance contained NaNs.
+        if np.isnan(ranked_scores).any():
+            bt.logging.warning(
+                f"Ranked scores contain NaN values. This may indicate an issue with accuracy_score data."
+            )
+            ranked_scores = np.nan_to_num(ranked_scores, nan=0.0) # Replace NaNs with 0
+
+        # Compute the norm of the ranked_scores
+        norm = np.linalg.norm(ranked_scores, ord=1, axis=0, keepdims=True)
 
         # Check if the norm is zero or contains NaN values
         if np.any(norm == 0) or np.isnan(norm).any():
-            norm = np.ones_like(norm)  # Avoid division by zero or NaN
+            bt.logging.warning("Norm of ranked_scores is zero or NaN. All miner scores might be zero or no miners participated/ranked.")
+            if np.any(norm == 0): # More specific check for zero norm
+                 raw_weights = np.zeros_like(ranked_scores, dtype=float)
+            else: # Handles NaN case by previous logic or could be more specific
+                 norm = np.ones_like(norm) # Fallback for NaN to prevent division error
+                 raw_weights = ranked_scores / norm
+        else:
+            raw_weights = ranked_scores / norm
+        
+        raw_weights_summary = {uid: weight for uid, weight in enumerate(raw_weights) if weight > 0}
+        bt.logging.info(f"Raw weights (before processing) summary: {raw_weights_summary}")
+        bt.logging.debug(f"Full raw_weights: {raw_weights.tolist()}")
+        bt.logging.debug(f"UIDs for raw_weights (metagraph.uids): {str(self.metagraph.uids.tolist())}")
 
-        # Compute raw_weights safely
-        raw_weights = self.scores / norm
-
-        bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", str(self.metagraph.uids.tolist()))
         # Process the raw weights to final_weights via subtensor limitations.
         (
             processed_weight_uids,
@@ -257,8 +330,10 @@ class BaseValidatorNeuron(BaseNeuron):
             subtensor=self.subtensor,
             metagraph=self.metagraph,
         )
-        bt.logging.debug("processed_weights", processed_weights)
-        bt.logging.debug("processed_weight_uids", processed_weight_uids)
+        bt.logging.info(f"Processed weight UIDs (first 10): {processed_weight_uids.tolist()[:10]}...")
+        bt.logging.info(f"Processed weights (first 10): {processed_weights.tolist()[:10]}...")
+        bt.logging.debug(f"Full processed_weight_uids: {processed_weight_uids.tolist()}")
+        bt.logging.debug(f"Full processed_weights: {processed_weights.tolist()}")
 
         # Convert to uint16 weights and uids.
         (
@@ -283,7 +358,8 @@ class BaseValidatorNeuron(BaseNeuron):
         if result is True:
             bt.logging.info("set_weights on chain successfully!")
         else:
-            bt.logging.error("set_weights failed", msg)
+            bt.logging.error(f"set_weights failed: {msg}")
+        bt.logging.info("Finished set_weights operation.")
 
     def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""

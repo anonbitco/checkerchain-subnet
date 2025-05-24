@@ -48,6 +48,9 @@ async def forward(self: Validator):
         self (:obj:`bittensor.neuron.Neuron`): The neuron object which contains all the necessary state for the validator.
 
     """
+    # Initialize latest_miner_performance at the beginning of each forward pass.
+    self.latest_miner_performance = {}
+
     # TODO(developer): Define how the validator selects a miner to query, how often, etc.
     # get_random_uids is an example method, but you can replace it with your own.
     # miner_uids = get_random_uids(self, k=self.config.neuron.sample_size)
@@ -177,16 +180,37 @@ async def forward(self: Validator):
             bt.logging.error("Error while sending data to stats server", e)
             bt.logging.error(prediction_logs)
 
-        bt.logging.info(f"Scored responses: {rewards}")
-        bt.logging.info(f"Score ids: {miner_ids}")
+        bt.logging.info(f"Scored responses: {rewards}") # This is the cumulative rewards for miner_uids
+        bt.logging.info(f"Score ids: {miner_ids}")     # This is a copy of original miner_uids
+
+        # Populate self.latest_miner_performance with the rewards from this round.
+        # `rewards` array corresponds to the initial `miner_uids` list.
+        # These are the raw/final scores for each UID for this validation round.
+        if len(miner_uids) == len(rewards):
+            for i, uid in enumerate(miner_uids):
+                self.latest_miner_performance[int(uid)] = float(rewards[i])
+            bt.logging.info(f"Populated latest_miner_performance for current round: {self.latest_miner_performance}")
+        else:
+            # This case should ideally not happen if rewards array is initialized based on miner_uids
+            # and populated correctly. If it does, latest_miner_performance will be empty (as initialized).
+            bt.logging.error(
+                f"Critical mismatch in length of miner_uids ({len(miner_uids)}) and rewards ({len(rewards)}). "
+                f"latest_miner_performance will be empty for this round, potentially leading to zero weights if not handled by set_weights."
+            )
+            # self.latest_miner_performance remains empty as initialized at the start of the function.
 
         mask = rewards > 0
         filtered_rewards = rewards[mask]
-        filtered_miner_ids = miner_uids[mask]
+        # `miner_uids` is the correct array to filter here, as `rewards` corresponds to it.
+        filtered_miner_ids = miner_uids[mask] 
         self.update_scores(filtered_rewards, filtered_miner_ids)
+
         for reward_product in data.reward_items:
             delete_a_product(reward_product._id)
     else:
+        # If there are no reward_items, latest_miner_performance remains empty (as initialized at the top).
+        # This ensures set_weights uses an empty dict, likely resulting in zero weights if it expects performance data.
+        bt.logging.info("No reward items processed in this round. latest_miner_performance is empty.")
         self.update_to_last_scores()
 
     # 25 mins until next validation ??
